@@ -1,0 +1,469 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>972</width>
+    <height>953</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_6">
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="fileGB">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border:0px</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="2" column="0">
+       <widget class="CardWidget" name="CardWidget_2">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="2" column="1" colspan="2">
+          <widget class="LineEdit" name="scanCID_LE">
+           <property name="text">
+            <string>AD</string>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="BodyLabel" name="BodyLabel_2">
+           <property name="text">
+            <string>扫描时间列</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="BodyLabel" name="BodyLabel_3">
+           <property name="text">
+            <string>月台号列</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="BodyLabel" name="BodyLabel">
+           <property name="text">
+            <string>单号列</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="LineEdit" name="shipCID_LE">
+           <property name="text">
+            <string>A</string>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="RadioButton" name="oldFormat_RB">
+           <property name="text">
+            <string>旧格式</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1" colspan="2">
+          <widget class="LineEdit" name="ytCID_LE">
+           <property name="text">
+            <string>AB</string>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="2">
+          <widget class="RadioButton" name="newFormat_RB">
+           <property name="text">
+            <string>新格式</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="TitleLabel" name="TitleLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>待处理文件</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="CardWidget" name="CardWidget">
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="0" column="0">
+          <widget class="ListWidget" name="excelFile_LW"/>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="PushButton" name="deleteExcelFileLWItem_PB">
+        <property name="text">
+         <string>删除选中文件</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="PushButton" name="reprocessExcelFile_PB">
+        <property name="text">
+         <string>重新处理文件</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="PushButton" name="getfile_PB">
+        <property name="text">
+         <string>添加文件</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QGroupBox" name="shipGB">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>5</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border:0px</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="TitleLabel" name="TitleLabel_2">
+        <property name="text">
+         <string>单号角度</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="CardWidget" name="CardWidget_3">
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="0" column="0">
+          <widget class="TableWidget" name="excelData_TW">
+           <property name="minimumSize">
+            <size>
+             <width>342</width>
+             <height>0</height>
+            </size>
+           </property>
+           <row>
+            <property name="text">
+             <string>1</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>2</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>3</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>4</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>5</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>6</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>7</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>8</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>10</string>
+            </property>
+           </row>
+           <column>
+            <property name="text">
+             <string>单号</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>扫描时间</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>月台号</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="PushButton" name="reverseSelectionShipID_PB">
+        <property name="text">
+         <string>反选单号</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="PushButton" name="deleteSelectionShipID_PB">
+        <property name="text">
+         <string>删除选中单号</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QGroupBox" name="ytGB">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>5</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">border:0px</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="TitleLabel" name="TitleLabel_3">
+        <property name="text">
+         <string>月台角度</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="CardWidget" name="CardWidget_4">
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="0" column="0">
+          <widget class="TableWidget" name="sameYTCount_TW">
+           <property name="minimumSize">
+            <size>
+             <width>336</width>
+             <height>0</height>
+            </size>
+           </property>
+           <row>
+            <property name="text">
+             <string>1</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>2</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>3</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>4</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>5</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>6</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>7</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>8</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>10</string>
+            </property>
+           </row>
+           <column>
+            <property name="text">
+             <string>月台号</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>单号数量</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>监控通道</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="BodyLabel" name="BodyLabel_4">
+          <property name="text">
+           <string>每个月台保留</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="EditableComboBox" name="keepShipNum_CB">
+          <property name="text">
+           <string>5</string>
+          </property>
+          <property name="readOnly">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="BodyLabel" name="BodyLabel_5">
+          <property name="text">
+           <string>个单号</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="PushButton" name="keepShip_PB">
+          <property name="text">
+           <string>确认</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="PushButton" name="reverseSelectionYT_PB">
+        <property name="text">
+         <string>反选月台</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="PushButton" name="deleteSelectionYT_PB">
+        <property name="text">
+         <string>删除选中月台</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>EditableComboBox</class>
+   <extends>LineEdit</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>PushButton</class>
+   <extends>QPushButton</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>RadioButton</class>
+   <extends>QRadioButton</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>CardWidget</class>
+   <extends>QFrame</extends>
+   <header>qfluentwidgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>BodyLabel</class>
+   <extends>QLabel</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>TitleLabel</class>
+   <extends>QLabel</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>LineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>ListWidget</class>
+   <extends>QListWidget</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>TableWidget</class>
+   <extends>QTableWidget</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
