@@ -17,22 +17,20 @@ from typing import List
 from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
 
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_Form
-from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, getYtBindHCVRConfig
+from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, getYtBindHCVRConfig, DevConfigFileNotFoundError, DevConfigFileInvalidError, FileContenIsEmptyException, \
+    getSameYTCountTableWidgetData
 from app.esheet_process_widget.epw_define import SYTTWEnum, EDTWEnum, ExcelFileListWidgetItemDataStruct, SameYTCountTableWidgetItemDataStruct, ExcelDataTableWidgetItemDataStruct
 from app.esheet_process_widget.init_epw import Init_EPW_Widget
 from openpyxl.utils.exceptions import InvalidFileException
 
-devConfigFilePath = Path(__file__).parent.parent / "AppData/月台配置.xlsx"
 
-# mainwindow那边定义logger，子组件这边共用的，不过是
-# 写完这个组件的功能就可以把git重置一下了，历史信息就不要保留了
+# mainwindow那边定义logger，子组件这边共用的，不过是没有独立的作用域标记了，但文件地址也能说明问题了
 
 
 class EPW_Widget(Init_EPW_Widget):
     def __init__(self, config):
         super().__init__(config)  # 调用父类构造函数，创建窗体
 
-    # f1 添加文件的数据表格处理
     @pyqtSlot(QListWidgetItem, QListWidgetItem)
     def on_excelFile_LW_currentItemChanged(self, current, previous):
         # 当前选中的item发生变化时，触发此函数
@@ -40,7 +38,7 @@ class EPW_Widget(Init_EPW_Widget):
             # 如果上一个item不为空，就先保存
             # 从窗体中获取排序数据和相同月台数量及previousItem中excel文件路径
             in_edtw_ItemDataList = self.getDataInExcelData_TW()
-            in_sytctw_ItemDataList = self.getDataInsameYTCount_TW()
+            in_sytctw_ItemDataList = self.getDataInSameYTCount_TW()
             excelFilePath = previous.data(Qt.UserRole).excelFilePath
             excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 创建excelFile_LW_ItemDataStruct对象
             excelFile_LW_ItemData.edtw_ItemDataList = in_edtw_ItemDataList
@@ -116,15 +114,15 @@ class EPW_Widget(Init_EPW_Widget):
             in_edtw_ItemDataList.append(temp_edtw_ItemData)
         return in_edtw_ItemDataList
 
-    def getDataInSameYTCount_TW(self) -> List[ExcelDataTableWidgetItemDataStruct]:
+    def getDataInSameYTCount_TW(self) -> List[SameYTCountTableWidgetItemDataStruct]:
         # 按照格式定义存放sameYTCount_TW中的所有数据
         rowCount = self.ui.sameYTCount_TW.rowCount()
         in_syttlw_ItemDataList = []
         for index in range(rowCount):
-            temp_syttlw_ItemData = ExcelDataTableWidgetItemDataStruct()
-            temp_syttlw_ItemData.shipID = self.ui.sameYTCount_TW.item(index, SYTTWEnum.YT.value).text()
-            temp_syttlw_ItemData.ytName = self.ui.sameYTCount_TW.item(index, SYTTWEnum.Count.value).text()
-            temp_syttlw_ItemData.scanTime = self.ui.sameYTCount_TW.item(index, SYTTWEnum.Channel.value).text()
+            temp_syttlw_ItemData = SameYTCountTableWidgetItemDataStruct()
+            temp_syttlw_ItemData.ytName = self.ui.sameYTCount_TW.item(index, SYTTWEnum.YT.value).text()
+            temp_syttlw_ItemData.shipCount = self.ui.sameYTCount_TW.item(index, SYTTWEnum.Count.value).text()
+            temp_syttlw_ItemData.devChannel = self.ui.sameYTCount_TW.item(index, SYTTWEnum.Channel.value).text()
             in_syttlw_ItemDataList.append(temp_syttlw_ItemData)
         return in_syttlw_ItemDataList
 
@@ -162,47 +160,31 @@ class EPW_Widget(Init_EPW_Widget):
                 InfoBar.warning(title='警告', content=loggerWaringText, orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=10000, parent=self)
                 logger.warning(loggerWaringText)
             else:
-                excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
-                if excelFile_LW_ItemData is not None:
+                try:
+                    excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
+                except FileContenIsEmptyException:  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
+                    loggerErrorText = f"文件是空的，注意检查是否填错数据列号或选错文件\n{filePath}"
+                    MessageBox('错误', loggerErrorText, self).exec_()
+                    logger.warning(loggerErrorText)
+                except InvalidFileException:
+                    loggerErrorText = f"文件格式错误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{filePath}"
+                    MessageBox('错误', loggerErrorText, self).exec_()
+                    logger.warning(loggerErrorText)
+                except FileNotFoundError:
+                    loggerErrorText = f"文件不存在，注意文件路径中不能含有空格\n{filePath}"
+                    MessageBox('错误', loggerErrorText, self).exec_()
+                    logger.warning(loggerErrorText)
+                except DevConfigFileNotFoundError as ErrorText:  # 设备配置文件路径是写的相对的，写在处理函数中的，可能会出现点问题吧
+                    MessageBox('错误', str(ErrorText), self).exec_()
+                    logger.warning(str(ErrorText))
+                except DevConfigFileInvalidError as ErrorText:  # 设备配置文件格式不合法，非xlsx，xls或文件名中有空格。
+                    MessageBox('错误', str(ErrorText), self).exec_()
+                    logger.warning(str(ErrorText))
+                else:
                     aItem = QListWidgetItem(fileName)
                     aItem.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
                     aItem.setData(Qt.UserRole, excelFile_LW_ItemData)
                     self.ui.excelFile_LW.addItem(aItem)
-
-    def getSameYTCountTableWidgetData(self, edtw_ItemDataList: List[ExcelDataTableWidgetItemDataStruct]) -> List[SameYTCountTableWidgetItemDataStruct]:
-        # 处理getExcelDataTableWidgetData返回的数据
-        # 得到 相同月台的单号总量和月台通道配置
-
-        ytNameList = [edtw_ItemData.ytName for edtw_ItemData in edtw_ItemDataList]
-        counter = Counter(ytNameList)  # 字典子类用于统计可哈希对象数量
-        sameYTCount = list(counter.most_common())  # 最大值顺序，顺便转成list
-
-        # 这里拿到了单号总量和月台通道配置，应该新开一个list
-
-        sytctw_ItemDataList = []
-        try:
-            # 判断文件是否存在
-            config_generate = getYtBindHCVRConfig(devConfigFilePath)
-            next(config_generate)  # 启动生成器
-            for yt, shipCount in sameYTCount:
-                temp_ItemDataList = SameYTCountTableWidgetItemDataStruct()
-                temp_ItemDataList.ytName = yt
-                temp_ItemDataList.shipCount = shipCount
-                temp_ItemDataList.devChannel = config_generate.send(yt)  # 向生成器发送月台名称
-                next(config_generate)  # 驱动生成器执行到ytName = yield，以便接收下一个月台名称
-                sytctw_ItemDataList.append(temp_ItemDataList)
-            config_generate.close()  # 手动关闭生成器
-            return sytctw_ItemDataList
-        except InvalidFileException:
-            loggerErrorText = f"设备配置文件格式错误，请检查文件是否为xlsx或xls\n{devConfigFilePath}"
-            MessageBox('错误', loggerErrorText, self).exec_()
-            logger.warning(loggerErrorText)
-            return
-        except FileNotFoundError:
-            loggerErrorText = f"设备配置文件不存在，请检查文件路径\n{devConfigFilePath}"
-            MessageBox('错误', loggerErrorText, self).exec_()
-            logger.warning(loggerErrorText)
-            return
 
     def handleExcelFileData2ItemData(self, filePath: str) -> ExcelFileListWidgetItemDataStruct:
         """
@@ -213,24 +195,9 @@ class EPW_Widget(Init_EPW_Widget):
         shipidCID = self.ui.shipCID_LE.text()  # 单号数据列 column
         scantimeCID = self.ui.scanCID_LE.text()  # 扫描时间列
         ytCID = self.ui.ytCID_LE.text()  # 月台号列
-        try:
-            # 这个地方获取的是中间的那个表格组件的数据，
-            edtw_ItemDataList = getExcelDataTableWidgetData(filePath, shipidCID, scantimeCID, ytCID)
-        except InvalidFileException:
-            loggerErrorText = f"文件格式错误\n{filePath}"
-            MessageBox('错误', loggerErrorText, self).exec_()
-            logger.warning(loggerErrorText)
-            return
-        except FileNotFoundError:
-            loggerErrorText = f"文件不存在\n{filePath}"
-            MessageBox('错误', loggerErrorText, self).exec_()
-            logger.warning(loggerErrorText)
-            return
-
-        sytctw_ItemDataList = self.getSameYTCountTableWidgetData(edtw_ItemDataList)  # 处理excel文件中二维列表数据
-        if sytctw_ItemDataList is None:
-            return
-        excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 保存数据
+        edtw_ItemDataList = getExcelDataTableWidgetData(filePath, shipidCID, scantimeCID, ytCID)  # 获取excel文件中的数据，这个部分要放到中间的表格组件中
+        sytctw_ItemDataList = getSameYTCountTableWidgetData(edtw_ItemDataList)  # 从上一步函数的返回值中获取相同月台表格组件中的数据
+        excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 统一保存
         excelFile_LW_ItemData.edtw_ItemDataList = edtw_ItemDataList
         excelFile_LW_ItemData.sytctw_ItemDataList = sytctw_ItemDataList
         excelFile_LW_ItemData.excelFilePath = filePath
@@ -254,7 +221,12 @@ if __name__ == "__main__":  # 用于当前窗体测试
     app = QApplication(sys.argv)  # 创建GUI应用程序
     forms = EPW_Widget(configini)  # 创建窗体
     forms.show()
-    desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
-    __filePath = os.path.join(desktopPath, "test.xlsx")
-    forms.addFilePathsToexcelFile_LWData([__filePath])
+
+    # TODO 有个方法能立即处理现有的事件队列，忘了
+    # 那个生成器可以一直保留着(不然我看处理速度好像有点慢，这是一个优化点。没必要一个文件还需要读一次配置，浪费资源时间)，excel文件记得关
+
+    __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
+    __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
+    __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
+    forms.addFilePathsToexcelFile_LWData([__filePath1, __filePath2])
     sys.exit(app.exec_())

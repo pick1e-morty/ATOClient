@@ -15,6 +15,43 @@ from app.QMyVDPw.Libs.QMyVDPwEnum import YTCETEnum
 from collections import Counter
 
 
+class TableDataUtilsException(Exception):
+
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+
+class DevConfigFileNotFoundError(TableDataUtilsException):
+    """
+    自定义异常类，用于处理设备配置文件不存在的情况
+    """
+
+    def __init__(self, message="设备配置文件不存在，整个文件路径最好是英文的且绝对不能带有空格"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class DevConfigFileInvalidError(TableDataUtilsException):
+    """
+    自定义异常类，用于处理设备配置文件不存在的情况
+    """
+
+    def __init__(self, message="设备配置文件格式错误，整个文件路径最好是英文的且绝对不能带有空格"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class FileContenIsEmptyException(TableDataUtilsException):
+    """
+    自定义异常类，用于处理设备配置文件不存在的情况
+    """
+
+    def __init__(self, message="要处理的数据文件为空"):
+        self.message = message
+        super().__init__(self.message)
+
+
 def getExcelDataTableWidgetData(filePath, shipidCID, scantimeCID, ytnameCID):
     """
     返回excel表格中指定列的数据
@@ -49,7 +86,41 @@ def getExcelDataTableWidgetData(filePath, shipidCID, scantimeCID, ytnameCID):
                 edtw_ItemDataList.append(temp_ItemData)
         except IndexError:
             continue
-    return edtw_ItemDataList
+    if not edtw_ItemDataList:   # 判断列表是否为空
+        raise FileContenIsEmptyException
+    else:
+        return edtw_ItemDataList
+
+
+def getSameYTCountTableWidgetData(edtw_ItemDataList: List[ExcelDataTableWidgetItemDataStruct]) -> List[SameYTCountTableWidgetItemDataStruct]:
+    # 处理getExcelDataTableWidgetData返回的数据
+    # 得到 相同月台的单号总量和月台通道配置
+
+    ytNameList = [edtw_ItemData.ytName for edtw_ItemData in edtw_ItemDataList]
+    counter = Counter(ytNameList)  # 字典子类用于统计可哈希对象数量
+    sameYTCount = list(counter.most_common())  # 最大值顺序，顺便转成list
+
+    # 这里拿到了单号总量和月台通道配置，应该新开一个list
+
+    sytctw_ItemDataList = []
+    devConfigFilePath = Path(__file__).parent.parent.parent / "AppData/月台配置.xlsx"
+    try:
+        # 判断文件是否存在
+        config_generate = getYtBindHCVRConfig(devConfigFilePath)
+        next(config_generate)  # 启动生成器
+        for yt, shipCount in sameYTCount:
+            temp_ItemDataList = SameYTCountTableWidgetItemDataStruct()
+            temp_ItemDataList.ytName = yt
+            temp_ItemDataList.shipCount = shipCount
+            temp_ItemDataList.devChannel = config_generate.send(yt)  # 向生成器发送月台名称
+            next(config_generate)  # 驱动生成器执行到ytName = yield，以便接收下一个月台名称
+            sytctw_ItemDataList.append(temp_ItemDataList)
+        config_generate.close()  # 手动关闭生成器
+        return sytctw_ItemDataList
+    except InvalidFileException:
+        raise DevConfigFileInvalidError(f"设备配置文件不存在，请检查文件路径\n{devConfigFilePath}")
+    except FileNotFoundError:
+        raise DevConfigFileNotFoundError(f"设备配置文件格式错误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{devConfigFilePath}")
 
 
 def getYtBindHCVRConfig(devConfigFilePath: Union[Path, str]):
