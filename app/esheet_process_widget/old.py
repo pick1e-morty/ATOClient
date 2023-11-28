@@ -346,9 +346,10 @@ class QmyExcelProcess(QWidget):
                 continue
 
         # 最后一个数据添加完后 就要激活其中一个数据，默认是最后一个也就是最新追加的一个   注意这次更新没有通过项目双击信号
-        if aItem is not None:
-            self.ui.excelFileLW.setCurrentItem(aItem)
-            print("设置ExcelFileLW的当前项目为:" + str(aItem))
+        setCurrentRow(row)
+        # if aItem is not None:
+        #     self.ui.excelFileLW.setCurrentItem(aItem)
+        #     print("设置ExcelFileLW的当前项目为:" + str(aItem))
 
 
 

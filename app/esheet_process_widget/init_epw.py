@@ -3,13 +3,13 @@ import os
 from collections import Counter
 from pathlib import Path
 
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, QEvent
 from PyQt5.QtWidgets import (
     QApplication,
     QFileDialog,
     QMessageBox,
     QTableWidgetItem,
-    QListWidgetItem, QWidget,
+    QListWidgetItem, QWidget, QListWidget,
 )
 from configobj import ConfigObj
 from loguru import logger
@@ -33,7 +33,13 @@ class Init_EPW_Widget(QWidget):
     def initUI(self):
         self.initKeepShipNum_CB()
 
+        # 这些是方法依赖的UI设定，不可更改
+        self.ui.excelFile_LW.setSelectionMode(QListWidget.SingleSelection)  # get_FilePathInExcelFile_LW_ItemData
+
+
+
     def initKeepShipNum_CB(self):
+        # 向月台保留下拉框中填充预定数据
         for num in self.epw_config["月台保留数量列表"]:
             self.ui.keepShipNum_CB.addItem(str(num))
             self.ui.keepShipNum_CB.setText("15")
@@ -52,11 +58,10 @@ class Init_EPW_Widget(QWidget):
         self.ui.scanCID_LE.setText(self.epw_config["旧格式"]["扫描时间列"])
         self.ui.ytCID_LE.setText(self.epw_config["旧格式"]["月台号列"])
 
-    # f0
-
 
 if __name__ == "__main__":  # 用于当前窗体测试
     from app.utils.aboutconfig import configini
+
     app = QApplication(sys.argv)  # 创建GUI应用程序
     forms = Init_EPW_Widget(configini)  # 创建窗体
     forms.show()

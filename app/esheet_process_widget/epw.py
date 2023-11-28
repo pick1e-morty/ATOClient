@@ -3,7 +3,7 @@ import os
 from collections import Counter
 from pathlib import Path
 
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, QEvent
 from PyQt5.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
 from loguru import logger
 from typing import List
 
-from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
+from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox, InfoBarIcon
 
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_Form
 from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, getYtBindHCVRConfig, DevConfigFileNotFoundError, DevConfigFileInvalidError, FileContenIsEmptyException, \
@@ -30,6 +30,7 @@ from openpyxl.utils.exceptions import InvalidFileException
 class EPW_Widget(Init_EPW_Widget):
     def __init__(self, config):
         super().__init__(config)  # 调用父类构造函数，创建窗体
+        self.setAcceptDrops(True)  # 开启拖拽
 
     @pyqtSlot(QListWidgetItem, QListWidgetItem)
     def on_excelFile_LW_currentItemChanged(self, current, previous):
@@ -37,9 +38,14 @@ class EPW_Widget(Init_EPW_Widget):
         if previous is not None:
             # 如果上一个item不为空，就先保存
             # 从窗体中获取排序数据和相同月台数量及previousItem中excel文件路径
+            # 由于我重写了该方法，所以此时界面上的数据还没有改变，
+            # 下面两个方法是从界面上取得的数值，而非从curItem或preItem
             in_edtw_ItemDataList = self.getDataInExcelData_TW()
             in_sytctw_ItemDataList = self.getDataInSameYTCount_TW()
-            excelFilePath = previous.data(Qt.UserRole).excelFilePath
+            # 但curItem, preItem确实改变了，而excelFilePath又没有放到界面上
+            # 所以需要一些稍微“另类”的方法来获取到这个excelFilePath
+            # 更加符合直觉的方法应该是QAbstractItemView.selectionChanged(selected, deselected)
+            excelFilePath = self.get_FilePathInExcelFile_LW_ItemData()
             excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 创建excelFile_LW_ItemDataStruct对象
             excelFile_LW_ItemData.edtw_ItemDataList = in_edtw_ItemDataList
             excelFile_LW_ItemData.sytctw_ItemDataList = in_sytctw_ItemDataList
@@ -54,6 +60,14 @@ class EPW_Widget(Init_EPW_Widget):
             self.clearEPW_WidgetText()
 
     @pyqtSlot()
+    def get_FilePathInExcelFile_LW_ItemData(self):
+        # 获取当前选中的item中的excelFilePath数据
+        # 确保excelFile_LW是单选的
+        # 因on_excelFile_LW_currentItemChanged处理逻辑而使用selectedItems
+        curItemDataFilePath = self.ui.excelFile_LW.selectedItems()[0].data(Qt.UserRole).excelFilePath
+        return curItemDataFilePath
+
+    @pyqtSlot()
     def loadExcelFile_LW_ItemData(self, excelFile_LW_ItemData: ExcelFileListWidgetItemDataStruct):
         # 从excelFile_LW_ItemData中获取数据，加载到窗体中
         self.loadExcelData_TW(excelFile_LW_ItemData.edtw_ItemDataList)
@@ -62,7 +76,6 @@ class EPW_Widget(Init_EPW_Widget):
     @pyqtSlot()
     def loadExcelData_TW(self, edtw_ItemDataList: List[ExcelDataTableWidgetItemDataStruct]):
         # 加载excel数据表格组件数据
-
         self.ui.excelData_TW.setRowCount(len(edtw_ItemDataList))
 
         for index in range(len(edtw_ItemDataList)):
@@ -80,12 +93,12 @@ class EPW_Widget(Init_EPW_Widget):
             item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
             col = EDTWEnum.ScanTime.value
             self.ui.excelData_TW.setItem(index, col, item)
+        self.ui.excelData_TW.resizeColumnsToContents()  # 调整列宽
 
     @pyqtSlot()
     def loadsameYTCount_TW(self, sytctw_ItemDataList: List[SameYTCountTableWidgetItemDataStruct]):
         # 加载相同月台数量窗体数据
         self.ui.sameYTCount_TW.setRowCount(len(sytctw_ItemDataList))
-
         for index in range(len(sytctw_ItemDataList)):
             item = QTableWidgetItem(str(sytctw_ItemDataList[index].ytName))
             item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
@@ -101,6 +114,7 @@ class EPW_Widget(Init_EPW_Widget):
             item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
             col = SYTTWEnum.Channel.value
             self.ui.sameYTCount_TW.setItem(index, col, item)
+        self.ui.sameYTCount_TW.resizeColumnsToContents()  # 调整列宽
 
     def getDataInExcelData_TW(self) -> List[ExcelDataTableWidgetItemDataStruct]:
         # 按照格式定义存放excelData_TW中的所有数据
@@ -185,6 +199,8 @@ class EPW_Widget(Init_EPW_Widget):
                     aItem.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
                     aItem.setData(Qt.UserRole, excelFile_LW_ItemData)
                     self.ui.excelFile_LW.addItem(aItem)
+        # 全部添加完毕后，选中excelFile_LW最后一个项目
+        self.ui.excelFile_LW.setCurrentRow(self.ui.excelFile_LW.count() - 1)
 
     def handleExcelFileData2ItemData(self, filePath: str) -> ExcelFileListWidgetItemDataStruct:
         """
@@ -212,7 +228,50 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot()
     def on_reprocessExcelFile_PB_clicked(self):
-        print("123")
+        # 重新处理文件按钮被点击,
+        selectedItems = self.ui.excelFile_LW.selectedItems()  # 获取List组件中选中的项目
+        if selectedItems:
+            selectedItem = selectedItems[0]
+            selectedItemText = selectedItem.text()
+            filePath = self.get_FilePathInExcelFile_LW_ItemData()
+            excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
+            self.clearEPW_WidgetText()
+            self.loadExcelFile_LW_ItemData(excelFile_LW_ItemData)
+            InfoBar.success(title='成功', content=f"已重新加载{selectedItemText}", orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+        else:
+            InfoBar.warning(title='警告', content="未选中任何项目", orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+
+    @pyqtSlot()
+    def on_deleteExcelFileLWItem_PB_clicked(self):
+        # 删除选中文件按钮点击
+        selectedItems = self.ui.excelFile_LW.selectedItems()  # 获取List组件中选中的项目
+        if selectedItems:
+            selectedItem = selectedItems[0]
+            selectedItemText = selectedItem.text()
+            selectedItemRow = self.ui.excelFile_LW.row(selectedItems[0])
+            self.ui.excelFile_LW.takeItem(selectedItemRow)
+            InfoBar.success(title='成功', content=f"已删除{selectedItemText}", orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+            self.ui.excelFile_LW.setCurrentRow(self.ui.excelFile_LW.count() - 1)
+        else:
+            InfoBar.warning(title='警告', content="未选中任何项目", orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+
+    @pyqtSlot(QEvent)
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
+
+    @pyqtSlot(QEvent)
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.setDropAction(Qt.CopyAction)
+            filePaths = [url.toLocalFile() for url in event.mimeData().urls()]
+            logger.debug(f"拖拽接收到的文件列表为{str(filePaths)}")
+            self.addFilePathsToexcelFile_LWData(filePaths)
+            event.accept()
+        else:
+            event.ignore()
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
