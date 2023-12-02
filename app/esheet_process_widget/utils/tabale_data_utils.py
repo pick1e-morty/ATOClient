@@ -1,8 +1,10 @@
+import sys
 from pathlib import Path
 from loguru import logger
-from typing import List, Union
+from typing import List, Union, Dict
+
 from app.esheet_process_widget.epw_define import ExcelDataTableWidgetItemDataStruct, \
-    SameYTCountTableWidgetItemDataStruct
+    SameYTCountTableWidgetItemDataStruct, YTCTFEnum, YTConfigDataStruct
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from app.QMyVDPw.Libs.QMyVDPwEnum import YTCETEnum
@@ -18,7 +20,7 @@ class TableDataUtilsException(Exception):
 
 class DevConfigFileNotFoundError(TableDataUtilsException):
     """
-    自定义异常类，用于处理设备配置文件不存在的情况
+    自定义异常类，用于标记设备配置文件不存在的情况
     """
 
     def __init__(self, message="设备配置文件不存在，整个文件路径最好是英文的且绝对不能带有空格"):
@@ -28,7 +30,7 @@ class DevConfigFileNotFoundError(TableDataUtilsException):
 
 class DevConfigFileInvalidError(TableDataUtilsException):
     """
-    自定义异常类，用于处理设备配置文件不存在的情况
+    自定义异常类，用于标记设备配置文件格式不正确的情况
     """
 
     def __init__(self, message="设备配置文件格式错误，整个文件路径最好是英文的且绝对不能带有空格"):
@@ -36,9 +38,9 @@ class DevConfigFileInvalidError(TableDataUtilsException):
         super().__init__(self.message)
 
 
-class FileContenIsEmptyException(TableDataUtilsException):
+class FileContentIsEmptyException(TableDataUtilsException):
     """
-    自定义异常类，用于处理设备配置文件不存在的情况
+    自定义异常类，用于标记要处理的文件是空的情况
     """
 
     def __init__(self, message="要处理的数据文件为空"):
@@ -46,10 +48,37 @@ class FileContenIsEmptyException(TableDataUtilsException):
         super().__init__(self.message)
 
 
-def getExcelDataTableWidgetData(filePath, shipidCID, scantimeCID, ytnameCID):
+class DevConfigFileContentIsEmptyException(TableDataUtilsException):
     """
-    返回excel表格中指定列的数据
+    自定义异常类，用于标记配置文件是空的情况
     """
+
+    def __init__(self, message="设备配置文件为空"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class DevConfigFileContentIsInvalidException(TableDataUtilsException):
+    """
+    自定义异常类，用于标记配置文件中的数值有误的情况
+    """
+
+    def __init__(self, message="设备配置文件数值有误"):
+        self.message = message
+        super().__init__(self.message)
+
+
+def is_instance_variables_has_empty(instance):
+    # 判断类实例的变量有没有空的。excel中，只要用户操作过这个单元格再删除，就算是空的也会返回"None"
+    for attr_name in dir(instance):
+        if not attr_name.startswith('__'):  # 排除掉Python内置的特殊方法或属性
+            attr_value = getattr(instance, attr_name)
+            if attr_value is None or attr_value == "" or attr_value == "None":
+                return True
+
+
+def getExcelDataTableWidgetData(filePath, shipidCID, scantimeCID, ytnameCID) -> List[ExcelDataTableWidgetItemDataStruct]:
+    # 返回excel表格中指定列的数据
     wb = load_workbook(filePath)
 
     ws = wb.active  # 获取当前活跃的sheet,默认是第一个sheet
@@ -59,35 +88,31 @@ def getExcelDataTableWidgetData(filePath, shipidCID, scantimeCID, ytnameCID):
     logger.info(logInfoText + "\n注意检查表头数据是否正确")
 
     ws.delete_rows(1)  # 删除第一行标题
-    shipID = [cell.value for cell in ws[shipidCID]]  # 获取单号列数据
-    scanTime = [cell.value for cell in ws[scantimeCID]]  # 扫描时间列数据
-    ytName = [cell.value for cell in ws[ytnameCID]]  # 月台号列数据
+    shipIDList = [cell.value for cell in ws[shipidCID]]  # 获取单号列数据
+    scanTimeList = [cell.value for cell in ws[scantimeCID]]  # 扫描时间列数据
+    ytNameList = [cell.value for cell in ws[ytnameCID]]  # 月台号列数据
     wb.close()  # 用完立即就关掉
     edtw_ItemDataList = []
 
-    def is_empty(var):
-        return var is None or var == "" or var == "None"
-
-    for index in range(len(shipID)):
+    for index in range(len(shipIDList)):
         temp_ItemData = ExcelDataTableWidgetItemDataStruct()
         try:
-            temp_ItemData.shipID = str(shipID[index])
-            temp_ItemData.scanTime = str(scanTime[index])  # 某列数据里可能是空的
-            temp_ItemData.ytName = str(ytName[index])
-            if is_empty(temp_ItemData.shipID) or is_empty(temp_ItemData.scanTime) or is_empty(temp_ItemData.ytName):
+            temp_ItemData.shipID = str(shipIDList[index])
+            temp_ItemData.scanTime = str(scanTimeList[index])  # 某列数据里可能是空的
+            temp_ItemData.ytName = str(ytNameList[index])
+            if is_instance_variables_has_empty(temp_ItemData):
                 continue
             else:
                 edtw_ItemDataList.append(temp_ItemData)
-        except IndexError:
+        except IndexError:  # 某个单元格为空，但应该不会存在这个问题的，先抓了再说吧
             continue
     if not edtw_ItemDataList:  # 判断列表是否为空
-        raise FileContenIsEmptyException
+        raise FileContentIsEmptyException(f"要处理的文件是空的，注意检查是否填错列号\n{filePath}")
     else:
         return edtw_ItemDataList
 
 
-def getSameYTCountTableWidgetData(edtw_ItemDataList: List[ExcelDataTableWidgetItemDataStruct]) -> List[
-    SameYTCountTableWidgetItemDataStruct]:
+def getSameYTCountTableWidgetData(edtw_ItemDataList: List[ExcelDataTableWidgetItemDataStruct]) -> List[SameYTCountTableWidgetItemDataStruct]:
     # 处理getExcelDataTableWidgetData返回的数据
     # 得到 相同月台的单号总量和月台通道配置
 
@@ -98,75 +123,81 @@ def getSameYTCountTableWidgetData(edtw_ItemDataList: List[ExcelDataTableWidgetIt
     # 这里拿到了单号总量和月台通道配置，应该新开一个list
 
     sytctw_ItemDataList = []
-    devConfigFilePath = Path(__file__).parent.parent.parent / "AppData/月台配置.xlsx"
-    try:
-        config_generate = getYtBindHCVRConfig(devConfigFilePath)
-        next(config_generate)  # 启动生成器
-        for yt, shipCount in sameYTCount:
-            temp_ItemDataList = SameYTCountTableWidgetItemDataStruct()
-            temp_ItemDataList.ytName = yt
-            temp_ItemDataList.shipCount = shipCount
-            temp_ItemDataList.devChannel = config_generate.send(yt)  # 向生成器发送月台名称
-            next(config_generate)  # 驱动生成器执行到ytName = yield，以便接收下一个月台名称
-            sytctw_ItemDataList.append(temp_ItemDataList)
-        return sytctw_ItemDataList
-    except InvalidFileException:
-        raise DevConfigFileInvalidError(f"设备配置文件格式错误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{devConfigFilePath}")
-    except FileNotFoundError:
-        raise DevConfigFileNotFoundError(f"设备配置文件不存在，确保文件格式为xlsx或xls及文件路径中不能含有空格n{devConfigFilePath}")
+    # config_generate = YtBindDevConfigGenerate()   # 已经做全局保活了，这边就不开了
+    for yt, shipCount in sameYTCount:
+        temp_ItemDataList = SameYTCountTableWidgetItemDataStruct()
+        temp_ItemDataList.ytName = yt
+        temp_ItemDataList.shipCount = shipCount
+        temp_ItemDataList.devChannel = __config_generate.send(yt)  # 向生成器发送月台名称
+        next(__config_generate)  # 驱动生成器执行到ytName = yield，以便接收下一个月台名称
+        sytctw_ItemDataList.append(temp_ItemDataList)
+    return sytctw_ItemDataList
 
 
-def getYtBindHCVRConfig(devConfigFilePath: Union[Path, str]):
-    # 获取月台绑定的HCVR设备配置信息
-    devConfigFilePath = str(devConfigFilePath)
-    YtBindConfig = getYtConfigFromConfigFile(devConfigFilePath)  # 读取设备配置表
-    if YtBindConfig:
-        # 先建立一个设备配置的月台索引列表
-        YtBindConfigIndexList = [i[YTCETEnum.YTCOLUMN.value] for i in YtBindConfig]
-
-        while True:
-            ytName = yield
-            录像机IP和通道 = "未配置"
-            if ytName in YtBindConfigIndexList:
-                # 然后这个月台名称在YtBindConfigIndexList中，
-                月台相对应的配置索引 = YtBindConfigIndexList.index(ytName)
-                # 则将在YtBindConfig中取出这个月台的索引
-                录像机IP = YtBindConfig[月台相对应的配置索引][YTCETEnum.IP.value]
-                if 录像机IP:
-                    录像机通道 = YtBindConfig[月台相对应的配置索引][YTCETEnum.CHANNEL.value]
-                    录像机IP和通道 = str(录像机IP) + "-" + str(录像机通道)
-            logger.trace("月台号" + str(ytName) + "绑定的HCVR设备为：" + str(录像机IP和通道))
-            yield 录像机IP和通道
-            # 最终弹出该月台号的指定列配置信息
-
-
-def getYtConfigFromConfigFile(filePath: str):
+def getYtConfigFromConfigFile(devConfigFilePath: Union[Path, str] = None) -> Dict[str, YTConfigDataStruct]:
     # 从配置文件中读取月台配置
-
-    configDataList = []
-    wb = load_workbook(filePath)  # 打开配置文件
+    devConfigFilePath = Path(__file__).parent.parent.parent / "AppData/月台配置.xlsx" if devConfigFilePath is None else devConfigFilePath
+    # 如果用户没传地址，就用缺省的
+    try:
+        wb = load_workbook(str(devConfigFilePath))  # 打开配置文件
+    except InvalidFileException:
+        raise DevConfigFileInvalidError(f"设备配置文件格式错误或文件路径有误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{str(devConfigFilePath)}")
+    except FileNotFoundError:
+        raise DevConfigFileNotFoundError(f"设备配置文件不存在，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{str(devConfigFilePath)}")
     ws = wb.active  # 获取活动表
     ws.delete_rows(1)  # 删除第一行标题
-
-    # 取ws的最大行数
-    maxRow = ws.max_row
-
-    # 取最大列数，就是YTCETEnum的长度
-    maxCol = len(YTCETEnum)
-
-    # 从excel表格中取出maxrow行maxcol列的数据
-    for row in range(1, maxRow):
-        rowDataList = []
-        for col in range(1, maxCol + 1):  # 这个
-            rowDataList.append(ws.cell(row=row, column=col).value)
-        else:  # 如果for中有break，则else不执行
-            # logger.debug("从配置文件中读取到的月台配置信息为：" + str(rowDataList))
-            configDataList.append(rowDataList)
-    logger.trace("从配置文件中读取到的月台配置信息为：" + str(configDataList))
+    ytList = [cell.value for cell in ws[YTCTFEnum.YT.value]]  # 月台列数据
+    devTypeList = [cell.value for cell in ws[YTCTFEnum.devType.value]]  # 设备类型列数据
+    devIPList = [cell.value for cell in ws[YTCTFEnum.devIP.value]]  # 设备IP列数据
+    devChannelList = [cell.value for cell in ws[YTCTFEnum.devChannel.value]]  # 设备通道列数据
+    devPortList = [cell.value for cell in ws[YTCTFEnum.devPort.value]]  # 设备端口列数据
+    devUserNameList = [cell.value for cell in ws[YTCTFEnum.devUserName.value]]  # 设备用户名列数据
+    devPasswordList = [cell.value for cell in ws[YTCTFEnum.devPassword.value]]  # 设备密码列数据
     wb.close()  # 关闭配置文件
-    return configDataList
+    ytConfigList = {}
+    for index in range(len(ytList)):
+        temp_ytConfig = YTConfigDataStruct()
+        try:
+            temp_ytConfig.yt = str(ytList[index])
+            temp_ytConfig.devType = str(devTypeList[index])
+            temp_ytConfig.devIP = str(devIPList[index])
+            # int方法不能接None，所以要提前判断一下，如果是None就让is_instance_variables_has_empty去处理
+            temp_ytConfig.devChannel = int(devChannelList[index]) if devChannelList[index] is not None else None
+            temp_ytConfig.devPort = int(devPortList[index]) if devPortList[index] is not None else None
+            temp_ytConfig.devUserName = str(devUserNameList[index])
+            temp_ytConfig.devPassword = str(devPasswordList[index])
+            if is_instance_variables_has_empty(temp_ytConfig):  # 跳过有空值的配置行
+                continue
+            else:
+                ytConfigList[temp_ytConfig.yt] = temp_ytConfig
+        except IndexError:  # 某个单元格为空，但应该不会存在这个问题的，先抓了再说吧
+            continue
+        except ValueError:  # 数值有误
+            continue
 
+    if ytConfigList:  # 判断列表是否为空
+        return ytConfigList
+    else:
+        raise DevConfigFileContentIsEmptyException(f"设备配置文件是空的，注意检查是否填错格式\n{filePath}")
+
+
+def YtBindDevConfigGenerate():
+    # 获取月台绑定的HCVR设备配置信息
+    ytBindConfigDict = getYtConfigFromConfigFile()  # 读取设备配置表
+    while True:
+        ytName = yield
+        try:
+            temp_ytConfig = ytBindConfigDict[ytName]
+            dev_ip_channel = f"{temp_ytConfig.devIP}-{str(temp_ytConfig.devChannel)}"
+        except KeyError:
+            dev_ip_channel = "未配置"
+        yield dev_ip_channel
+
+
+__config_generate = YtBindDevConfigGenerate()
+next(__config_generate)  # 启动生成器
 
 if __name__ == "__main__":
-    # getYtConfigFromConfigFile()
+    __devConfigFilePath = Path(__file__).parent.parent.parent / "AppData/月台配置.xlsx"
+    print(getYtConfigFromConfigFile(__devConfigFilePath))
     pass

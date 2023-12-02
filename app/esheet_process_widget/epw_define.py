@@ -50,6 +50,36 @@ class ExcelFileListWidgetItemDataStruct(object):
         self.sytctw_ItemDataList = sytctw_ItemDataList  # 相同月台数量
         self.excelFilePath = excelFilePath  # excel文件路径
 
+
+class YTCTFEnum(Enum):
+    # 月台配置表枚举 YTConfiguration Table File
+    YT = 'A'  # 月台号
+    devType = 'B'  # 设备厂商
+    devIP = 'C'  # 设备ip
+    devChannel = 'D'  # 通道
+    devPort = 'E'  # 端口
+    devUserName = 'F'  # 用户名
+    devPassword = 'G'  # 密码
+
+    # ASSEMBLYLINERANGE = 7  # 流水线体范围
+    # BEDPLATERANGE = 8  # 称台范围
+    # BEDPLATECENTER = 9  # 称台中心
+
+
+class YTConfigDataStruct(object):
+    __slots__ = ['yt', 'devType', 'devIP', 'devChannel', 'devPort', 'devUserName', 'devPassword']
+
+    def __init__(self, yt: str = None, devType: str = None, devIP: str = None,
+                 devChannel: int = None, devPort: int = None, devUserName: str = None,
+                 devPassword: str = None):
+        self.yt = yt
+        self.devType = devType
+        self.devIP = devIP
+        self.devChannel = devChannel
+        self.devPort = devPort
+        self.devUserName = devUserName
+        self.devPassword = devPassword
+
 # def filteredDataContainsNone(self):
 #     # 去除原始数据中包含None的数据
 #

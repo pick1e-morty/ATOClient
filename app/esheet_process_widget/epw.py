@@ -9,7 +9,8 @@ from loguru import logger
 from typing import List
 from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox, RoundMenu, Action, MenuAnimationType
 from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, DevConfigFileNotFoundError, \
-    DevConfigFileInvalidError, FileContenIsEmptyException, getSameYTCountTableWidgetData
+    DevConfigFileInvalidError, FileContentIsEmptyException, getSameYTCountTableWidgetData, \
+    DevConfigFileContentIsEmptyException
 from app.esheet_process_widget.epw_define import SYTTWEnum, EDTWEnum, ExcelFileListWidgetItemDataStruct, \
     SameYTCountTableWidgetItemDataStruct, ExcelDataTableWidgetItemDataStruct
 from app.esheet_process_widget.init_epw import Init_EPW_Widget
@@ -31,7 +32,7 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot(QListWidgetItem, QListWidgetItem)
     def on_excelFile_LW_currentItemChanged(self, current, previous):
-        # 当前选中的item发生变化时，触发此函数
+        # 用户选择不同的项目触发该方法
         if previous is not None:
             # 如果上一个item不为空，就先保存
             # 从窗体中获取排序数据和相同月台数量及previousItem中excel文件路径
@@ -147,19 +148,17 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot()
     def on_getfile_PB_clicked(self):
-        # 添加文件按钮被点击
-        # 获取文件名列表
+        # 添加文件按钮被点击，获取文件名列表
         curPath = os.path.join(os.path.expanduser("~"), "Desktop")
         dlgTitle = "请选择要处理的Excel"
         filt = "文档(*.xlsx *.xls);;所有(*.*)"
         filePathList, filtUsed = QFileDialog.getOpenFileNames(self, dlgTitle, curPath, filt)
-        # 如果列表不为空，则添加数据到暂存表中
         if filePathList:
             self.addFilePathsToexcelFile_LWData(filePathList)
 
     def addFilePathsToexcelFile_LWData(self, filePathList: List[str]):
         """
-        添加文件路径到excelFile_LW中
+        添加excel文件路径到excelFile_LW中，将excel文件中的数据处理后添加到组件item的data中
         """
         for filePath in filePathList:
             fileName = os.path.basename(filePath)  # 获取文件名
@@ -174,12 +173,12 @@ class EPW_Widget(Init_EPW_Widget):
             else:
                 try:
                     excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
-                except FileContenIsEmptyException:  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
+                except FileContentIsEmptyException:  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
                     loggerErrorText = f"文件是空的，注意检查是否填错数据列号或选错文件\n{filePath}"
                     MessageBox('错误', loggerErrorText, self).exec_()
                     logger.warning(loggerErrorText)
                 except InvalidFileException:
-                    loggerErrorText = f"文件格式错误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{filePath}"
+                    loggerErrorText = f"文件格式错误或文件路径有误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{filePath}"
                     MessageBox('错误', loggerErrorText, self).exec_()
                     logger.warning(loggerErrorText)
                 except FileNotFoundError:
@@ -192,6 +191,9 @@ class EPW_Widget(Init_EPW_Widget):
                 except DevConfigFileInvalidError as ErrorText:  # 设备配置文件格式不合法，非xlsx，xls或文件名中有空格。
                     MessageBox('错误', str(ErrorText), self).exec_()
                     logger.warning(str(ErrorText))
+                except DevConfigFileContentIsEmptyException as ErrorText:
+                    MessageBox('错误', str(ErrorText), self).exec_()
+                    logger.warning(str(ErrorText))
                 else:
                     aItem = QListWidgetItem(fileName)
                     aItem.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
@@ -201,10 +203,7 @@ class EPW_Widget(Init_EPW_Widget):
         self.ui.excelFile_LW.setCurrentRow(self.ui.excelFile_LW.count() - 1)
 
     def handleExcelFileData2ItemData(self, filePath: str) -> ExcelFileListWidgetItemDataStruct:
-        """
-        获取excel文件的指定行列数据，并返回excelFile_LW_ItemDataStruct
-        return excelFile_LW_ItemData:excelFileListWidgetItemDataStruct
-        """
+        # 获取excel文件的指定行列数据，并返回excelFile_LW_ItemDataStruct
         logger.info("本次处理的Excel文件地址为:" + filePath)
         shipidCID = self.ui.shipCID_LE.text()  # 单号数据列 column
         scanTimeCID = self.ui.scanTimeCID_LE.text()  # 扫描时间列
@@ -216,7 +215,7 @@ class EPW_Widget(Init_EPW_Widget):
         excelFile_LW_ItemData.edtw_ItemDataList = edtw_ItemDataList
         excelFile_LW_ItemData.sytctw_ItemDataList = sytctw_ItemDataList
         excelFile_LW_ItemData.excelFilePath = filePath
-        return excelFile_LW_ItemData  # 返回excelFile_LW_ItemDataStruct对象
+        return excelFile_LW_ItemData
 
     def getInexcelFile_LWaddedAppointFileAdress(self, fileName: str) -> str:
         # 获取在excelFile_LW组件中已经添加过的指定的文件地址
@@ -260,6 +259,7 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot(QEvent)
     def dragEnterEvent(self, event):
+        # 允许拖拽url进入
         if event.mimeData().hasUrls():
             event.accept()
         else:
@@ -267,6 +267,7 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot(QEvent)
     def dropEvent(self, event):
+        # 允许用户通过拖拽添加要处理的excel文件
         if event.mimeData().hasUrls():
             event.setDropAction(Qt.CopyAction)
             filePaths = [url.toLocalFile() for url in event.mimeData().urls()]
@@ -278,16 +279,18 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot()
     def on_keepShipNum_SPB_clicked(self):
+        # 保留选中月台中指定数量的单号按钮被点击
         keepNum = self.ui.keepShipNum_SPB.text()
-        self.keepAppointNumShipIDInYt(int(keepNum))
+        self.keepAppointNumShipIDInYt(int(keepNum))  # 向删除函数传入按钮上的数值
 
     def connect_keepShipNum_SPB_Action(self):
+        # 连接按钮中的菜单中的action触发信号到内部函数中
         def getNum(checked: bool):
             keepNum = int(self.sender().text())
             self.keepAppointNumShipIDInYt(keepNum)
-
+        # action.triggered.connect(lambda: self.keepAppointNumShipIDInYt(int(action.text())))
+        # 如果这么连接函数就会导致所有action传参都是最后一个keepNum，记得以前就是这么传的呀，无奈用了这种方法
         for action in self.ui.keepShipNum_SPB.flyout.menuActions():
-            # action.triggered.connect(lambda: self.keepAppointNumShipIDInYt(int(action.text())))   # 不知道为啥不成功，记得以前就是这么传的呀
             action.triggered.connect(getNum)
 
     def keepAppointNumShipIDInYt(self, keepNum: int):
@@ -356,6 +359,7 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot()
     def on_reverseSelectionShipID_PB_clicked(self):
+        # 反选单号按钮被按下
         self.ui.excelData_TW.setSelectionBehavior(QAbstractItemView.SelectRows)
         selectionModel = self.ui.excelData_TW.selectionModel()
         for row in range(self.ui.excelData_TW.rowCount()):
@@ -371,6 +375,7 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot()
     def on_reverseSelectionYT_PB_clicked(self):
+        # 反选月台按钮被按下
         selectionModel = self.ui.sameYTCount_TW.selectionModel()
         for row in range(self.ui.sameYTCount_TW.rowCount()):
             item = self.ui.sameYTCount_TW.item(row, 0)
@@ -385,6 +390,7 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot()
     def on_deleteSelectionShipID_PB_clicked(self):
+        # 删除单号按钮被按下
         selectItems = self.ui.excelData_TW.selectionModel().selectedRows(SYTTWEnum.YT.value)
         if selectItems:
             for modelIndex in reversed(selectItems):
@@ -399,6 +405,7 @@ class EPW_Widget(Init_EPW_Widget):
 
     @pyqtSlot()
     def on_deleteSelectionYT_PB_clicked(self):
+        # 删除月台按钮被按下
         selectItems = self.ui.sameYTCount_TW.selectionModel().selectedRows(SYTTWEnum.YT.value)
         if selectItems:
             for modelIndex in self.ui.sameYTCount_TW.selectionModel().selectedRows(SYTTWEnum.YT.value):
@@ -422,14 +429,13 @@ if __name__ == "__main__":  # 用于当前窗体测试
     app = QApplication(sys.argv)  # 创建GUI应用程序
     forms = EPW_Widget(configini)  # 创建窗体
     forms.show()
-    # TODO 设备配置匹配那里，改成字典的
+
     # TODO 立即显示窗体，耗时操作后面做，以后记得做splashScreen
     QApplication.processEvents()
-    # TODO 那个生成器可以一直保留着(不然我看处理速度好像有点慢，这是一个优化点。没必要一个文件还需要读一次配置，浪费资源时间)
-    # 想办法保活模块里的生成器
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
-    # __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
-    forms.addFilePathsToexcelFile_LWData([__filePath1])
-    # forms.addFilePathsToexcelFile_LWData([__filePath1, __filsePath2])
+    __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
+    # forms.addFilePathsToexcelFile_LWData([__filePath1])
+    forms.addFilePathsToexcelFile_LWData([__filePath1, __filePath2])
+
     sys.exit(app.exec_())

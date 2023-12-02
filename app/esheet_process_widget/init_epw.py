@@ -1,7 +1,10 @@
 import sys
-from PyQt5.QtCore import pyqtSlot, QEvent
+from pathlib import Path
+
+from PyQt5.QtCore import pyqtSlot, QEvent, QSize, Qt
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QTableWidget, QAction)
-from qfluentwidgets import RoundMenu, Action, MenuAnimationType
+from qfluentwidgets import RoundMenu, Action, MenuAnimationType, SplashScreen
 
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_Form
 
@@ -11,20 +14,35 @@ class Init_EPW_Widget(QWidget):
         super().__init__()  # 调用父类构造函数，创建窗体
         self.ui = Ui_Form()  # 创建UI对象
         self.ui.setupUi(self)  # 构造UI界面
+
+
+        # self.setWindowFlags(Qt.SubWindow)
+
         self.epw_config = config["epw"]
         self.initUI()
 
-    def initUI(self):
-        self.initKeepShipNum_SPB()
-
-        # 这些是方法依赖的UI设定，不可更改
-        self.ui.excelFile_LW.setSelectionMode(QListWidget.SingleSelection)  # get_FilePathInExcelFile_LW_ItemData
         self.ui.excelFile_LW.installEventFilter(self)
         self.ui.excelData_TW.installEventFilter(self)
         self.ui.sameYTCount_TW.installEventFilter(self)
         self.init_excelFile_LW_Menu()
         self.init_excelData_TW_Menu()
         self.init_sameYTCount_TW_Menu()
+
+    def initUI(self):
+        self.initKeepShipNum_SPB()
+        # 这些是方法依赖的UI设定，不可更改
+        self.ui.excelFile_LW.setSelectionMode(QListWidget.SingleSelection)  # get_FilePathInExcelFile_LW_ItemData
+
+    def loadSplashScreen(self):
+        logoFilePath = Path(__file__).parent.parent / "AppData/logo.png"
+        self.setWindowIcon(QIcon(str(logoFilePath)))
+        self.splashScreen = SplashScreen(self.windowIcon(), self)
+        self.splashScreen.setTitleBar(QWidget())  # 去掉启动画面中右上角的三个窗口按钮
+        formsWidth = self.size().width()
+        formsHeigth = self.size().height()
+        self.splashScreen.setIconSize(QSize(formsWidth // 2, formsHeigth // 2))
+        # self.show()
+        QApplication.processEvents()
 
     def init_excelFile_LW_Menu(self):
 
