@@ -1,13 +1,14 @@
 import sys
 import os
 from collections import Counter
+from pathlib import Path
 
-from PyQt5.QtCore import Qt, pyqtSlot, QEvent, QItemSelectionModel
+from PyQt5.QtCore import Qt, pyqtSlot, QEvent, QItemSelectionModel, QSize
 from PyQt5.QtGui import QIcon, QContextMenuEvent
-from PyQt5.QtWidgets import (QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView)
+from PyQt5.QtWidgets import (QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView, QWidget)
 from loguru import logger
 from typing import List
-from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox, RoundMenu, Action, MenuAnimationType
+from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox, RoundMenu, Action, MenuAnimationType, SplashScreen
 from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, DevConfigFileNotFoundError, \
     DevConfigFileInvalidError, FileContentIsEmptyException, getSameYTCountTableWidgetData, \
     DevConfigFileContentIsEmptyException
@@ -24,10 +25,9 @@ class EPW_Widget(Init_EPW_Widget):
     def __init__(self, config):
         super().__init__(config)  # 调用父类构造函数，创建窗体
         self.setAcceptDrops(True)  # 开启拖拽
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self):
-        super().initUI()
+    def init_ui(self):
         self.connect_keepShipNum_SPB_Action()
 
     @pyqtSlot(QListWidgetItem, QListWidgetItem)
@@ -160,6 +160,7 @@ class EPW_Widget(Init_EPW_Widget):
         """
         添加excel文件路径到excelFile_LW中，将excel文件中的数据处理后添加到组件item的data中
         """
+        excelFile_LW_RowCount = self.ui.excelFile_LW.count()
         for filePath in filePathList:
             fileName = os.path.basename(filePath)  # 获取文件名
             existexcelFile_LWItem = self.ui.excelFile_LW.findItems(fileName, Qt.MatchExactly)  # 查找预添加的文件名称是否已经存在
@@ -171,51 +172,56 @@ class EPW_Widget(Init_EPW_Widget):
                                 position=InfoBarPosition.TOP_LEFT, duration=10000, parent=self)
                 logger.warning(loggerWaringText)
             else:
-                try:
-                    excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
-                except FileContentIsEmptyException:  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
-                    loggerErrorText = f"文件是空的，注意检查是否填错数据列号或选错文件\n{filePath}"
-                    MessageBox('错误', loggerErrorText, self).exec_()
-                    logger.warning(loggerErrorText)
-                except InvalidFileException:
-                    loggerErrorText = f"文件格式错误或文件路径有误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{filePath}"
-                    MessageBox('错误', loggerErrorText, self).exec_()
-                    logger.warning(loggerErrorText)
-                except FileNotFoundError:
-                    loggerErrorText = f"文件不存在，注意文件路径中不能含有空格\n{filePath}"
-                    MessageBox('错误', loggerErrorText, self).exec_()
-                    logger.warning(loggerErrorText)
-                except DevConfigFileNotFoundError as ErrorText:  # 设备配置文件路径是写的相对的，写在处理函数中的，可能会出现点问题吧
-                    MessageBox('错误', str(ErrorText), self).exec_()
-                    logger.warning(str(ErrorText))
-                except DevConfigFileInvalidError as ErrorText:  # 设备配置文件格式不合法，非xlsx，xls或文件名中有空格。
-                    MessageBox('错误', str(ErrorText), self).exec_()
-                    logger.warning(str(ErrorText))
-                except DevConfigFileContentIsEmptyException as ErrorText:
-                    MessageBox('错误', str(ErrorText), self).exec_()
-                    logger.warning(str(ErrorText))
-                else:
+                excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
+                if excelFile_LW_ItemData:
                     aItem = QListWidgetItem(fileName)
                     aItem.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
                     aItem.setData(Qt.UserRole, excelFile_LW_ItemData)
                     self.ui.excelFile_LW.addItem(aItem)
-        # 全部添加完毕后，选中excelFile_LW最后一个项目
-        self.ui.excelFile_LW.setCurrentRow(self.ui.excelFile_LW.count() - 1)
+        # 全部添加完毕后，判断是否新增项目。如果比处理文件之前的总数要多，就选中excelFile_LW最后一个项目
+        if self.ui.excelFile_LW.count() > excelFile_LW_RowCount:
+            self.ui.excelFile_LW.setCurrentRow(self.ui.excelFile_LW.count() - 1)
 
     def handleExcelFileData2ItemData(self, filePath: str) -> ExcelFileListWidgetItemDataStruct:
         # 获取excel文件的指定行列数据，并返回excelFile_LW_ItemDataStruct
         logger.info("本次处理的Excel文件地址为:" + filePath)
-        shipidCID = self.ui.shipCID_LE.text()  # 单号数据列 column
-        scanTimeCID = self.ui.scanTimeCID_LE.text()  # 扫描时间列
-        ytCID = self.ui.ytCID_LE.text()  # 月台号列
-        edtw_ItemDataList = getExcelDataTableWidgetData(filePath, shipidCID, scanTimeCID,
-                                                        ytCID)  # 获取excel文件中的数据，这个部分要放到中间的表格组件中
-        sytctw_ItemDataList = getSameYTCountTableWidgetData(edtw_ItemDataList)  # 从上一步函数的返回值中获取相同月台表格组件中的数据
-        excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 统一保存
-        excelFile_LW_ItemData.edtw_ItemDataList = edtw_ItemDataList
-        excelFile_LW_ItemData.sytctw_ItemDataList = sytctw_ItemDataList
-        excelFile_LW_ItemData.excelFilePath = filePath
-        return excelFile_LW_ItemData
+        if self.ui.customFormat_SB.isChecked():
+            shipid_CID = self.ui.shipCID_LE.text()  # 单号数据列
+            scanTime_CID = self.ui.scanTimeCID_LE.text()  # 扫描时间列
+            yt_CID = self.ui.ytCID_LE.text()  # 月台号列
+            scanTimeFormat_CID = self.ui.scanTimeFormat_LE.text()  # 扫描时间的处理格式
+        else:
+            shipid_CID = scanTime_CID = yt_CID = scanTimeFormat_CID = None
+        try:
+            edtw_ItemDataList = getExcelDataTableWidgetData(filePath, shipid_CID, scanTime_CID, yt_CID, scanTimeFormat_CID)  # 用户没选自定义列号就用函数中缺省的列号
+            sytctw_ItemDataList = getSameYTCountTableWidgetData(edtw_ItemDataList)  # 从上一步函数的返回值中获取相同月台表格组件中的数据
+        except FileContentIsEmptyException:  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
+            loggerErrorText = f"文件是空的，注意检查是否填错数据列号或选错文件\n{filePath}"
+            MessageBox('错误', loggerErrorText, self).exec_()
+            logger.warning(loggerErrorText)
+        except InvalidFileException:
+            loggerErrorText = f"文件格式错误或文件路径有误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{filePath}"
+            MessageBox('错误', loggerErrorText, self).exec_()
+            logger.warning(loggerErrorText)
+        except FileNotFoundError:
+            loggerErrorText = f"文件不存在，注意文件路径中不能含有空格\n{filePath}"
+            MessageBox('错误', loggerErrorText, self).exec_()
+            logger.warning(loggerErrorText)
+        except DevConfigFileNotFoundError as ErrorText:  # 设备配置文件路径是写的相对的，写在处理函数中的，可能会出现点问题吧
+            MessageBox('错误', str(ErrorText), self).exec_()
+            logger.warning(str(ErrorText))
+        except DevConfigFileInvalidError as ErrorText:  # 设备配置文件格式不合法，非xlsx，xls或文件名中有空格。
+            MessageBox('错误', str(ErrorText), self).exec_()
+            logger.warning(str(ErrorText))
+        except DevConfigFileContentIsEmptyException as ErrorText:
+            MessageBox('错误', str(ErrorText), self).exec_()
+            logger.warning(str(ErrorText))
+        else:
+            excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 统一保存
+            excelFile_LW_ItemData.edtw_ItemDataList = edtw_ItemDataList
+            excelFile_LW_ItemData.sytctw_ItemDataList = sytctw_ItemDataList
+            excelFile_LW_ItemData.excelFilePath = filePath
+            return excelFile_LW_ItemData
 
     def getInexcelFile_LWaddedAppointFileAdress(self, fileName: str) -> str:
         # 获取在excelFile_LW组件中已经添加过的指定的文件地址
@@ -231,12 +237,16 @@ class EPW_Widget(Init_EPW_Widget):
         if selectedItems:
             selectedItem = selectedItems[0]
             selectedItemText = selectedItem.text()
-            filePath = self.get_FilePathInExcelFile_LW_ItemData()
-            excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
-            self.clearEPW_WidgetText()
-            self.loadExcelFile_LW_ItemData(excelFile_LW_ItemData)
-            InfoBar.success(title='成功', content=f"已重新加载{selectedItemText}", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+            filePath = self.get_FilePathInExcelFile_LW_ItemData()  # 拿到这个项目保存的文件地址
+            excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)  # 通过内部方法直接得到ExcelFileListWidgetItemDataStruct
+            if excelFile_LW_ItemData:  # 这里的写法跳过了文件名重复判断和ListWidgetItem.setData()
+                self.clearEPW_WidgetText()  # 因为切项目的时候会自动保存
+                self.loadExcelFile_LW_ItemData(excelFile_LW_ItemData)
+                InfoBar.success(title='成功', content=f"已重新加载{selectedItemText}", orient=Qt.Horizontal, isClosable=True,
+                                position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+            else:
+                InfoBar.warning(title='错误', content=f"重新加载{selectedItemText}失败", orient=Qt.Horizontal, isClosable=True,
+                                position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
         else:
             InfoBar.warning(title='警告', content="未选中任何项目", orient=Qt.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
@@ -288,6 +298,7 @@ class EPW_Widget(Init_EPW_Widget):
         def getNum(checked: bool):
             keepNum = int(self.sender().text())
             self.keepAppointNumShipIDInYt(keepNum)
+
         # action.triggered.connect(lambda: self.keepAppointNumShipIDInYt(int(action.text())))
         # 如果这么连接函数就会导致所有action传参都是最后一个keepNum，记得以前就是这么传的呀，无奈用了这种方法
         for action in self.ui.keepShipNum_SPB.flyout.menuActions():
@@ -342,6 +353,8 @@ class EPW_Widget(Init_EPW_Widget):
                 item = QTableWidgetItem(str(sameYTCount[yTNameInRow]))
                 item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
                 self.ui.sameYTCount_TW.setItem(row, SYTTWEnum.Count.value, item)
+        self.ui.excelData_TW.updateSelectedRows()
+        self.ui.sameYTCount_TW.updateSelectedRows()
 
     @pyqtSlot()
     def on_selectAllShipID_PB_clicked(self):
@@ -396,7 +409,6 @@ class EPW_Widget(Init_EPW_Widget):
             for modelIndex in reversed(selectItems):
                 self.ui.excelData_TW.removeRow(modelIndex.row())  # 倒序删除不会影响index
             self.afterDelete_RecalculateSameYTCountTableWidgetData()
-            self.ui.sameYTCount_TW.updateSelectedRows()
             InfoBar.success(title='成功', content=f"已删除选中单号", orient=Qt.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP, duration=1000, parent=self.ui.excelData_TW)
         else:
@@ -415,7 +427,6 @@ class EPW_Widget(Init_EPW_Widget):
                     if yTName == delete_YtName:
                         self.ui.excelData_TW.removeRow(row)
             self.afterDelete_RecalculateSameYTCountTableWidgetData()
-            self.ui.sameYTCount_TW.updateSelectedRows()
             InfoBar.success(title='成功', content=f"已删除选中月台", orient=Qt.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
         else:
@@ -428,14 +439,15 @@ if __name__ == "__main__":  # 用于当前窗体测试
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
     forms = EPW_Widget(configini)  # 创建窗体
-    forms.show()
 
-    # TODO 立即显示窗体，耗时操作后面做，以后记得做splashScreen
-    QApplication.processEvents()
+    # TODO flow组件，自己挪按钮进去吧
+
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
     __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
     # forms.addFilePathsToexcelFile_LWData([__filePath1])
     forms.addFilePathsToexcelFile_LWData([__filePath1, __filePath2])
+    forms.splashScreen.finish()
+    forms.show()
 
     sys.exit(app.exec_())

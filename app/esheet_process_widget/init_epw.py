@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from PyQt5.QtCore import pyqtSlot, QEvent, QSize, Qt
+from PyQt5.QtCore import pyqtSlot, QEvent, QSize, Qt, QPropertyAnimation, QRect
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QTableWidget, QAction)
 from qfluentwidgets import RoundMenu, Action, MenuAnimationType, SplashScreen
@@ -15,23 +15,38 @@ class Init_EPW_Widget(QWidget):
         self.ui = Ui_Form()  # 创建UI对象
         self.ui.setupUi(self)  # 构造UI界面
 
-
-        # self.setWindowFlags(Qt.SubWindow)
-
         self.epw_config = config["epw"]
         self.initUI()
 
+    def initUI(self):
+        self.loadSplashScreen()
+        self.initKeepShipNum_SPB()
+        self.initCustomFormat_CW()
         self.ui.excelFile_LW.installEventFilter(self)
         self.ui.excelData_TW.installEventFilter(self)
         self.ui.sameYTCount_TW.installEventFilter(self)
         self.init_excelFile_LW_Menu()
         self.init_excelData_TW_Menu()
         self.init_sameYTCount_TW_Menu()
-
-    def initUI(self):
-        self.initKeepShipNum_SPB()
-        # 这些是方法依赖的UI设定，不可更改
+        # 下面是方法依赖的UI设定，不可更改
         self.ui.excelFile_LW.setSelectionMode(QListWidget.SingleSelection)  # get_FilePathInExcelFile_LW_ItemData
+
+    def initCustomFormat_CW(self):
+        # 初始化CustomFormat_CardWidget
+        self.ui.shipCID_LE.setText(self.epw_config["自定义格式"]["单号列"])
+        self.ui.scanTimeCID_LE.setText(self.epw_config["自定义格式"]["扫描时间列"])
+        self.ui.ytCID_LE.setText(self.epw_config["自定义格式"]["月台号列"])
+        self.ui.scanTimeFormat_LE.setText(self.epw_config["自定义格式"]["扫描时间格式"])
+
+        self.ui.shipCID_LE.setVisible(False)
+        self.ui.shipCID_BL.setVisible(False)
+        self.ui.ytCID_LE.setVisible(False)
+        self.ui.ytCID_BL.setVisible(False)
+        self.ui.scanTimeCID_LE.setVisible(False)
+        self.ui.scanTimeCID_BL.setVisible(False)
+        self.ui.scanTimeFormat_LE.setVisible(False)
+        self.ui.scanTimeFormat_BL.setVisible(False)
+
 
     def loadSplashScreen(self):
         logoFilePath = Path(__file__).parent.parent / "AppData/logo.png"
@@ -41,8 +56,42 @@ class Init_EPW_Widget(QWidget):
         formsWidth = self.size().width()
         formsHeigth = self.size().height()
         self.splashScreen.setIconSize(QSize(formsWidth // 2, formsHeigth // 2))
-        # self.show()
+        self.show()
         QApplication.processEvents()
+
+    @pyqtSlot(bool)
+    def on_customFormat_SB_checkedChanged(self, isChecked):
+        # 当自定义格式按钮被按下时执行该方法
+        fourLineEditHeight = self.ui.shipCID_LE.height() + self.ui.ytCID_LE.height() + self.ui.scanTimeCID_LE.height() + self.ui.scanTimeFormat_LE.height()
+        bodyLabelHeight = self.ui.scanTimeFormat_BL.height()
+        verticalSpacingHeight = self.ui.CustomFormat_CW.layout().verticalSpacing() * 4
+        totalHeight = fourLineEditHeight + bodyLabelHeight + verticalSpacingHeight
+
+
+        if isChecked:
+            self.expandCustom_CW_Animation = QPropertyAnimation(self.ui.CustomFormat_CW, b'geometry')
+            start_geometry = self.ui.CustomFormat_CW.geometry()
+            end_geometry = QRect(start_geometry.x(), start_geometry.y() - totalHeight, start_geometry.width(), start_geometry.height() + totalHeight)
+            self.expandCustom_CW_Animation.setDuration(200)  # 设置动画持续时间为200毫秒
+            self.expandCustom_CW_Animation.setStartValue(start_geometry)
+            self.expandCustom_CW_Animation.setEndValue(end_geometry)
+            self.expandCustom_CW_Animation.start()  # 启动展开动画
+        else:
+            self.collapseCustom_CW_Animation = QPropertyAnimation(self.ui.CustomFormat_CW, b'geometry')
+            start_geometry = self.ui.CustomFormat_CW.geometry()
+            end_geometry = QRect(start_geometry.x(), start_geometry.y() + totalHeight, start_geometry.width(), start_geometry.height() - totalHeight)
+            self.collapseCustom_CW_Animation.setDuration(200)  # 设置动画持续时间为200毫秒
+            self.collapseCustom_CW_Animation.setStartValue(start_geometry)
+            self.collapseCustom_CW_Animation.setEndValue(end_geometry)
+            self.collapseCustom_CW_Animation.start()  # 启动展开动画
+        self.ui.shipCID_LE.setVisible(isChecked)
+        self.ui.shipCID_BL.setVisible(isChecked)
+        self.ui.ytCID_LE.setVisible(isChecked)
+        self.ui.ytCID_BL.setVisible(isChecked)
+        self.ui.scanTimeCID_LE.setVisible(isChecked)
+        self.ui.scanTimeCID_BL.setVisible(isChecked)
+        self.ui.scanTimeFormat_LE.setVisible(isChecked)
+        self.ui.scanTimeFormat_BL.setVisible(isChecked)
 
     def init_excelFile_LW_Menu(self):
 
@@ -104,34 +153,15 @@ class Init_EPW_Widget(QWidget):
             menu.addAction(action)
         self.ui.keepShipNum_SPB.setFlyout(menu)
 
-    # 还有这个初始化重做
-    # for循环创建Action，全部连接一个共有的函数
-    # 判读这个action上面带的什么数字来执行函数
-    # 还有那个按钮本身也是用的这个函数，按钮默认是15
-    # 这里不做trigger()连接，初始化后从menu里取所有action
 
-    # flow组件，自己挪按钮进去吧
-    # 新加了一个扫描时间格式，配置那边记得写，读excel的时候就做好类型判断
 
-    @pyqtSlot()
-    def on_newFormat_RB_clicked(self):
-        # 新格式单选按钮被点击
-        self.ui.shipCID_LE.setText(self.epw_config["常用格式"]["单号列"])
-        self.ui.scanTimeCID_LE.setText(self.epw_config["常用格式"]["扫描时间列"])
-        self.ui.ytCID_LE.setText(self.epw_config["常用格式"]["月台号列"])
-        self.ui.scanTimeFormat_LE.setText(self.epw_config["常用格式"]["扫描时间格式"])
 
-    @pyqtSlot()
-    def on_oldFormat_RB_clicked(self):
-        # 旧格式单选按钮被点击
-        self.ui.shipCID_LE.setText(self.epw_config["其他格式"]["单号列"])
-        self.ui.scanTimeCID_LE.setText(self.epw_config["其他格式"]["扫描时间列"])
-        self.ui.ytCID_LE.setText(self.epw_config["其他格式"]["月台号列"])
-        self.ui.scanTimeFormat_LE.setText(self.epw_config["其他格式"]["扫描时间格式"])
-        self.ui.shipCID_LE.setReadOnly(False)
-        self.ui.scanTimeCID_LE.setReadOnly(False)
-        self.ui.ytCID_LE.setReadOnly(False)
-        self.ui.scanTimeFormat_LE.setReadOnly(False)
+    # @pyqtSlot()
+    # def on_getfile_PB_clicked(self):
+    #     print(self.ui.CardWidget.width())
+    #     print(self.ui.CustomFormat_CW.width())
+
+
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
@@ -139,5 +169,8 @@ if __name__ == "__main__":  # 用于当前窗体测试
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
     forms = Init_EPW_Widget(configini)  # 创建窗体
+    if forms.splashScreen is not None:
+        forms.splashScreen.finish()
     forms.show()
+
     sys.exit(app.exec_())

@@ -1,4 +1,4 @@
-import sys
+from datetime import datetime
 from pathlib import Path
 from loguru import logger
 from typing import List, Union, Dict
@@ -7,7 +7,6 @@ from app.esheet_process_widget.epw_define import ExcelDataTableWidgetItemDataStr
     SameYTCountTableWidgetItemDataStruct, YTCTFEnum, YTConfigDataStruct
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
-from app.QMyVDPw.Libs.QMyVDPwEnum import YTCETEnum
 from collections import Counter
 
 
@@ -77,34 +76,49 @@ def is_instance_variables_has_empty(instance):
                 return True
 
 
-def getExcelDataTableWidgetData(filePath, shipidCID, scantimeCID, ytnameCID) -> List[ExcelDataTableWidgetItemDataStruct]:
+def getExcelDataTableWidgetData(filePath: str, shipid_CID: str = None, scantime_CID: str = None, ytname_CID: str = None, scantimeformat: str = None) -> List[ExcelDataTableWidgetItemDataStruct]:
     # 返回excel表格中指定列的数据
+
+    # [[默认格式]]
+    # 单号列 = A
+    # 月台号列 = AB
+    # 扫描时间列 = AD
+    # 扫描时间格式 = %Y-%m-%d %H:%M:%S
+    shipID_CID = "A" if shipid_CID is None else shipid_CID
+    scanTime_CID = "AD" if scantime_CID is None else scantime_CID
+    ytName_CID = "AB" if ytname_CID is None else ytname_CID
+    scanTimeFormat = "%Y-%m-%d %H:%M:%S" if scantimeformat is None else scantimeformat
+
     wb = load_workbook(filePath)
 
     ws = wb.active  # 获取当前活跃的sheet,默认是第一个sheet
-    logInfoText = "\n" + shipidCID + "列表头为:" + str(ws[shipidCID][0].value) \
-                  + "\n" + scantimeCID + "列表头为:" + str(ws[scantimeCID][0].value) \
-                  + "\n" + ytnameCID + "列表头为:" + str(ws[ytnameCID][0].value)
+    logInfoText = "\n" + shipID_CID + "列表头为:" + str(ws[shipID_CID][0].value) \
+                  + "\n" + scanTime_CID + "列表头为:" + str(ws[scanTime_CID][0].value) \
+                  + "\n" + ytName_CID + "列表头为:" + str(ws[ytName_CID][0].value)
     logger.info(logInfoText + "\n注意检查表头数据是否正确")
 
     ws.delete_rows(1)  # 删除第一行标题
-    shipIDList = [cell.value for cell in ws[shipidCID]]  # 获取单号列数据
-    scanTimeList = [cell.value for cell in ws[scantimeCID]]  # 扫描时间列数据
-    ytNameList = [cell.value for cell in ws[ytnameCID]]  # 月台号列数据
+    shipIDList = [cell.value for cell in ws[shipID_CID]]  # 获取单号列数据
+    scanTimeList = [cell.value for cell in ws[scanTime_CID]]  # 扫描时间列数据
+    ytNameList = [cell.value for cell in ws[ytName_CID]]  # 月台号列数据
     wb.close()  # 用完立即就关掉
     edtw_ItemDataList = []
 
     for index in range(len(shipIDList)):
         temp_ItemData = ExcelDataTableWidgetItemDataStruct()
         try:
-            temp_ItemData.shipID = str(shipIDList[index])
-            temp_ItemData.scanTime = str(scanTimeList[index])  # 某列数据里可能是空的
-            temp_ItemData.ytName = str(ytNameList[index])
+            temp_ItemData.shipID = int(shipIDList[index]) if shipIDList[index] is not None else None
+            temp_ItemData.scanTime = datetime.strptime(scanTimeList[index], scanTimeFormat) if scanTimeList[index] is not None else None
+            temp_ItemData.ytName = str(ytNameList[index])  # 某列数据里可能是空的
             if is_instance_variables_has_empty(temp_ItemData):
                 continue
             else:
                 edtw_ItemDataList.append(temp_ItemData)
-        except IndexError:  # 某个单元格为空，但应该不会存在这个问题的，先抓了再说吧
+        except IndexError as errorInfo:  # 某个单元格为空，但应该不会存在这个问题的，先抓了再说吧
+            logger.error(f"可能是某个单元格为空，原报错信息{errorInfo}")
+            continue
+        except ValueError as errorInfo:  # 一般是用户填错了列号
+            logger.error(f"应该是填错了数据列号或者时间格式不对，原报错信息{errorInfo}")
             continue
     if not edtw_ItemDataList:  # 判断列表是否为空
         raise FileContentIsEmptyException(f"要处理的文件是空的，注意检查是否填错列号\n{filePath}")
@@ -170,9 +184,11 @@ def getYtConfigFromConfigFile(devConfigFilePath: Union[Path, str] = None) -> Dic
                 continue
             else:
                 ytConfigList[temp_ytConfig.yt] = temp_ytConfig
-        except IndexError:  # 某个单元格为空，但应该不会存在这个问题的，先抓了再说吧
+        except IndexError as errorInfo:  # 某个单元格为空，但应该不会存在这个问题的，先抓了再说吧
+            logger.error(f"可能是某个单元格为空，原报错信息{errorInfo}")
             continue
-        except ValueError:  # 数值有误
+        except ValueError as errorInfo:  # 配置表中数值有误，应该是填错位置了
+            logger.error(f"应该是配置信息填错位置了，原报错信息{errorInfo}")
             continue
 
     if ytConfigList:  # 判断列表是否为空
@@ -194,7 +210,7 @@ def YtBindDevConfigGenerate():
         yield dev_ip_channel
 
 
-__config_generate = YtBindDevConfigGenerate()
+__config_generate = YtBindDevConfigGenerate()  # 全局变量保活
 next(__config_generate)  # 启动生成器
 
 if __name__ == "__main__":
