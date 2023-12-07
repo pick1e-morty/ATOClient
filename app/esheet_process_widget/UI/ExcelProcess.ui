@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>998</width>
-    <height>953</height>
+    <width>1265</width>
+    <height>925</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -179,15 +179,54 @@
      <property name="styleSheet">
       <string notr="true">border:0px</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
+     <layout class="QGridLayout" name="gridLayout_7">
+      <item row="2" column="1">
+       <widget class="PushButton" name="reverseSelectionShipID_PB">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>反选单号</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
        <widget class="TitleLabel" name="TitleLabel_2">
         <property name="text">
          <string>单号角度</string>
         </property>
        </widget>
       </item>
-      <item>
+      <item row="2" column="0">
+       <widget class="PushButton" name="selectAllShipID_PB">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>全选单号</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="PushButton" name="deleteSelectionShipID_PB">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>删除选中单号</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="3">
        <widget class="CardWidget" name="CardWidget_3">
         <layout class="QGridLayout" name="gridLayout_3">
          <item row="0" column="0">
@@ -263,33 +302,6 @@
         </layout>
        </widget>
       </item>
-      <item>
-       <widget class="QWidget" name="flowLayout_1" native="true">
-        <layout class="QGridLayout" name="gridLayout_8">
-         <item row="0" column="0">
-          <widget class="PushButton" name="selectAllShipID_PB">
-           <property name="text">
-            <string>全选单号</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="PushButton" name="reverseSelectionShipID_PB">
-           <property name="text">
-            <string>反选单号</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="PushButton" name="deleteSelectionShipID_PB">
-           <property name="text">
-            <string>删除选中单号</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
      </layout>
     </widget>
    </item>
@@ -304,15 +316,15 @@
      <property name="styleSheet">
       <string notr="true">border:0px</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
+     <layout class="QGridLayout" name="gridLayout_8">
+      <item row="0" column="0" colspan="2">
        <widget class="TitleLabel" name="TitleLabel_3">
         <property name="text">
          <string>月台角度</string>
         </property>
        </widget>
       </item>
-      <item>
+      <item row="1" column="0" colspan="3">
        <widget class="CardWidget" name="CardWidget_4">
         <layout class="QGridLayout" name="gridLayout_5">
          <item row="0" column="0">
@@ -388,62 +400,80 @@
         </layout>
        </widget>
       </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
-        <item>
-         <widget class="BodyLabel" name="BodyLabel_4">
-          <property name="text">
-           <string>保留选中月台的单号数量</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="SplitPushButton" name="keepShipNum_SPB">
-          <property name="text_" stdset="0">
-           <string>20</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QWidget" name="flowLayout_2" native="true">
-        <layout class="QGridLayout" name="gridLayout_7">
+      <item row="2" column="0" colspan="3">
+       <widget class="CardWidget" name="CardWidget_2">
+        <layout class="QGridLayout" name="gridLayout_9">
+         <item row="0" column="2">
+          <widget class="VerticalSeparator" name="VerticalSeparator"/>
+         </item>
+         <item row="0" column="4">
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="0" column="1">
+          <widget class="SplitPushButton" name="keepShipNum_SPB">
+           <property name="text_" stdset="0">
+            <string>20</string>
+           </property>
+          </widget>
+         </item>
          <item row="0" column="0">
-          <widget class="PushButton" name="selectAllYT_PB">
+          <widget class="BodyLabel" name="BodyLabel_4">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="text">
-            <string>全选月台</string>
+            <string>保留选中月台的单号数量</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="PushButton" name="reverseSelectionYT_PB">
-           <property name="text">
-            <string>反选月台</string>
+         <item row="0" column="3">
+          <widget class="SwitchButton" name="autoDeleteUnConfiguredYT_SB">
+           <property name="checked">
+            <bool>false</bool>
            </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="PushButton" name="deleteSelectionYT_PB">
-           <property name="text">
-            <string>删除选中月台</string>
+           <property name="onText">
+            <string>自动删除未配置月台</string>
+           </property>
+           <property name="offText">
+            <string>自动删除未配置月台</string>
            </property>
           </widget>
          </item>
         </layout>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="PushButton" name="selectAllYT_PB">
+        <property name="text">
+         <string>全选月台</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="PushButton" name="reverseSelectionYT_PB">
+        <property name="text">
+         <string>反选月台</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="PushButton" name="deleteSelectionYT_PB">
+        <property name="text">
+         <string>删除选中月台</string>
+        </property>
        </widget>
       </item>
      </layout>
@@ -464,6 +494,11 @@
   </customwidget>
   <customwidget>
    <class>SwitchButton</class>
+   <extends>QWidget</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>VerticalSeparator</class>
    <extends>QWidget</extends>
    <header>qfluentwidgets</header>
   </customwidget>

@@ -1,15 +1,23 @@
 import sys
 from pathlib import Path
 
-from PyQt5.QtCore import pyqtSlot, QEvent, QSize, Qt, QPropertyAnimation, QRect
+from PyQt5.QtCore import pyqtSlot, QEvent, QSize, Qt, QPropertyAnimation, QRect, QEasingCurve
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QTableWidget, QAction)
-from qfluentwidgets import RoundMenu, Action, MenuAnimationType, SplashScreen
+from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QTableWidget, QAction, QSizePolicy)
+from qfluentwidgets import RoundMenu, Action, MenuAnimationType, SplashScreen, FlowLayout, SwitchButton
 
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_Form
 
 
 class Init_EPW_Widget(QWidget):
+    """
+    这边实现的功能
+    1. 左边的ListWidget和右边两个TableWidget的右键菜单
+    2. 自定义处理格式的展开收缩的动画
+    3. 从配置文件中读取数据并设置到 保留指定月台中的单号数量按钮中的各个action所携带的数值，以及自定义处理格式中的四个LineEdit的默认数值
+    4. 开始屏幕的加载启动（关闭方法则是两边的文件入口都有）
+    """
+
     def __init__(self, config):
         super().__init__()  # 调用父类构造函数，创建窗体
         self.ui = Ui_Form()  # 创建UI对象
@@ -19,9 +27,15 @@ class Init_EPW_Widget(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.loadSplashScreen()
+        # self.loadSplashScreen()
         self.initKeepShipNum_SPB()
         self.initCustomFormat_CW()
+        # self.initFlowLayout()
+        # 仅仅是美化的修改
+        self.moveSwitchButtonIndicator2Right(self.ui.customFormat_SB)
+        self.moveSwitchButtonIndicator2Right(self.ui.autoDeleteUnConfiguredYT_SB)
+
+        # 三个组件的右键菜单
         self.ui.excelFile_LW.installEventFilter(self)
         self.ui.excelData_TW.installEventFilter(self)
         self.ui.sameYTCount_TW.installEventFilter(self)
@@ -30,9 +44,42 @@ class Init_EPW_Widget(QWidget):
         self.init_sameYTCount_TW_Menu()
         # 下面是方法依赖的UI设定，不可更改
         self.ui.excelFile_LW.setSelectionMode(QListWidget.SingleSelection)  # get_FilePathInExcelFile_LW_ItemData
+    @staticmethod
+    def moveSwitchButtonIndicator2Right(switchButton: SwitchButton):
+        # 用于将Designer生成的SwithButton中的Indicator移动到右边，当然Designer中没有修改该属性的接口
+        # 由于主题作者没有提供动态修改SwitchButton中Indicator位置的方法，所以只能自己动手了
+        switchButtonLabel = switchButton.label
+        switchButtonIndicator = switchButton.indicator
+        switchButton.hBox.removeWidget(switchButtonLabel)
+        switchButton.hBox.removeWidget(switchButtonIndicator)
+        switchButton.hBox.addWidget(switchButtonLabel, 0, Qt.AlignRight)
+        switchButton.hBox.addWidget(switchButtonIndicator, 0, Qt.AlignRight)
+
+    def initFlowLayout(self):
+        # 失败了，没开
+        self.flowLayout = FlowLayout(self, needAni=True)
+
+        self.flowLayout.setAnimation(250, QEasingCurve.OutQuad)
+        self.flowLayout.setContentsMargins(30, 30, 30, 30)
+        self.flowLayout.setVerticalSpacing(6)
+        self.flowLayout.setHorizontalSpacing(6)
+
+        self.ui.selectAllShipID_PB.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        self.ui.reverseSelectionShipID_PB.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        self.ui.deleteSelectionShipID_PB.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+
+        self.ui.verticalLayout.removeWidget(self.ui.selectAllShipID_PB)
+        self.ui.verticalLayout.removeWidget(self.ui.reverseSelectionShipID_PB)
+        self.ui.verticalLayout.removeWidget(self.ui.deleteSelectionShipID_PB)
+
+        self.flowLayout.addWidget(self.ui.selectAllShipID_PB)
+        self.flowLayout.addWidget(self.ui.reverseSelectionShipID_PB)
+        self.flowLayout.addWidget(self.ui.deleteSelectionShipID_PB)
+
+        self.ui.verticalLayout.addLayout(self.flowLayout)
 
     def initCustomFormat_CW(self):
-        # 初始化CustomFormat_CardWidget
+        # 初始化CustomFormat_CardWidget，隐藏其中的所有组件
         self.ui.shipCID_LE.setText(self.epw_config["自定义格式"]["单号列"])
         self.ui.scanTimeCID_LE.setText(self.epw_config["自定义格式"]["扫描时间列"])
         self.ui.ytCID_LE.setText(self.epw_config["自定义格式"]["月台号列"])
@@ -47,8 +94,8 @@ class Init_EPW_Widget(QWidget):
         self.ui.scanTimeFormat_LE.setVisible(False)
         self.ui.scanTimeFormat_BL.setVisible(False)
 
-
     def loadSplashScreen(self):
+        # 加载启动屏幕
         logoFilePath = Path(__file__).parent.parent / "AppData/logo.png"
         self.setWindowIcon(QIcon(str(logoFilePath)))
         self.splashScreen = SplashScreen(self.windowIcon(), self)
@@ -62,13 +109,15 @@ class Init_EPW_Widget(QWidget):
     @pyqtSlot(bool)
     def on_customFormat_SB_checkedChanged(self, isChecked):
         # 当自定义格式按钮被按下时执行该方法
+        # 展开组件，向上扩展至正常展开时所占用的高度
+        # 或收缩至只有一个switchButton的大小
+        # 按照相对应的状态来判断是否展示Custom_CardWidget中的组件
         fourLineEditHeight = self.ui.shipCID_LE.height() + self.ui.ytCID_LE.height() + self.ui.scanTimeCID_LE.height() + self.ui.scanTimeFormat_LE.height()
         bodyLabelHeight = self.ui.scanTimeFormat_BL.height()
         verticalSpacingHeight = self.ui.CustomFormat_CW.layout().verticalSpacing() * 4
-        totalHeight = fourLineEditHeight + bodyLabelHeight + verticalSpacingHeight
+        totalHeight = fourLineEditHeight + bodyLabelHeight + verticalSpacingHeight  # 先获取正常展开时所占用的高度
 
-
-        if isChecked:
+        if isChecked:  # 展开组件，向上扩展至正常展开时所占用的高度
             self.expandCustom_CW_Animation = QPropertyAnimation(self.ui.CustomFormat_CW, b'geometry')
             start_geometry = self.ui.CustomFormat_CW.geometry()
             end_geometry = QRect(start_geometry.x(), start_geometry.y() - totalHeight, start_geometry.width(), start_geometry.height() + totalHeight)
@@ -76,7 +125,7 @@ class Init_EPW_Widget(QWidget):
             self.expandCustom_CW_Animation.setStartValue(start_geometry)
             self.expandCustom_CW_Animation.setEndValue(end_geometry)
             self.expandCustom_CW_Animation.start()  # 启动展开动画
-        else:
+        else:  # 收缩组件，向下收缩
             self.collapseCustom_CW_Animation = QPropertyAnimation(self.ui.CustomFormat_CW, b'geometry')
             start_geometry = self.ui.CustomFormat_CW.geometry()
             end_geometry = QRect(start_geometry.x(), start_geometry.y() + totalHeight, start_geometry.width(), start_geometry.height() - totalHeight)
@@ -94,7 +143,7 @@ class Init_EPW_Widget(QWidget):
         self.ui.scanTimeFormat_BL.setVisible(isChecked)
 
     def init_excelFile_LW_Menu(self):
-
+        # 初始化excel文件列表组件的右键菜单
         action_getfile = Action("添加文件")
         action_getfile.triggered.connect(lambda: self.ui.getfile_PB.click())
         action_reprocessExcelFile = Action("重新处理文件")
@@ -108,6 +157,7 @@ class Init_EPW_Widget(QWidget):
         self.excelFile_LW_Menu.addAction(action_deleteExcelFileLWItem)
 
     def init_excelData_TW_Menu(self):
+        # 初始化excel数据表格组件的右键菜单
         action_selectAllShipID = Action("全选单号")
         action_selectAllShipID.triggered.connect(lambda: self.ui.selectAllShipID_PB.click())
         action_reverseSelectionShipID = Action("反选单号")
@@ -121,6 +171,7 @@ class Init_EPW_Widget(QWidget):
         self.excelData_TW_Menu.addAction(action_deleteSelectionShipID)
 
     def init_sameYTCount_TW_Menu(self):
+        # 初始化相同月台总量表格组件的右键菜单
         self.sameYTCount_TW_Menu = RoundMenu(parent=self)
         self.sameYTCount_TW_Menu.addMenu(self.ui.keepShipNum_SPB.flyout)
         self.sameYTCount_TW_Menu.addSeparator()
@@ -135,6 +186,7 @@ class Init_EPW_Widget(QWidget):
         self.sameYTCount_TW_Menu.addAction(action_deleteSelectionYT)
 
     def eventFilter(self, watch, event):
+        # 事件过滤器拦截ContextMenu，并启动相对应位置中预设的右键菜单
         if event.type() == QEvent.Type.ContextMenu:
             if watch is self.ui.excelFile_LW:
                 self.excelFile_LW_Menu.exec(event.globalPos(), aniType=MenuAnimationType.DROP_DOWN)
@@ -153,15 +205,10 @@ class Init_EPW_Widget(QWidget):
             menu.addAction(action)
         self.ui.keepShipNum_SPB.setFlyout(menu)
 
-
-
-
     # @pyqtSlot()
     # def on_getfile_PB_clicked(self):
     #     print(self.ui.CardWidget.width())
     #     print(self.ui.CustomFormat_CW.width())
-
-
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
@@ -169,8 +216,6 @@ if __name__ == "__main__":  # 用于当前窗体测试
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
     forms = Init_EPW_Widget(configini)  # 创建窗体
-    if forms.splashScreen is not None:
-        forms.splashScreen.finish()
     forms.show()
 
     sys.exit(app.exec_())

@@ -1,6 +1,7 @@
 .vscode
 .idea
-
 __pycache__
-
 月台配置.xlsx
+
+# viztracer的结果文件
+result.json

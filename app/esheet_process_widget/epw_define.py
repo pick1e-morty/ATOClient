@@ -67,6 +67,7 @@ class YTCTFEnum(Enum):
 
 
 class YTConfigDataStruct(object):
+    # 从excel表中取配置用YTCTFEnum，在软件内部层全部只需要用YTConfigDataStruct。
     __slots__ = ['yt', 'devType', 'devIP', 'devChannel', 'devPort', 'devUserName', 'devPassword']
 
     def __init__(self, yt: str = None, devType: str = None, devIP: str = None,

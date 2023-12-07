@@ -158,7 +158,7 @@ def getYtConfigFromConfigFile(devConfigFilePath: Union[Path, str] = None) -> Dic
         raise DevConfigFileInvalidError(f"设备配置文件格式错误或文件路径有误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{str(devConfigFilePath)}")
     except FileNotFoundError:
         raise DevConfigFileNotFoundError(f"设备配置文件不存在，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{str(devConfigFilePath)}")
-    ws = wb.active  # 获取活动表
+    ws = wb.active  # 获取活动表，如果用户改变了默认的激活表，那这里也是会出错的地方，到时候会报配置文件为空
     ws.delete_rows(1)  # 删除第一行标题
     ytList = [cell.value for cell in ws[YTCTFEnum.YT.value]]  # 月台列数据
     devTypeList = [cell.value for cell in ws[YTCTFEnum.devType.value]]  # 设备类型列数据
@@ -167,7 +167,7 @@ def getYtConfigFromConfigFile(devConfigFilePath: Union[Path, str] = None) -> Dic
     devPortList = [cell.value for cell in ws[YTCTFEnum.devPort.value]]  # 设备端口列数据
     devUserNameList = [cell.value for cell in ws[YTCTFEnum.devUserName.value]]  # 设备用户名列数据
     devPasswordList = [cell.value for cell in ws[YTCTFEnum.devPassword.value]]  # 设备密码列数据
-    wb.close()  # 关闭配置文件
+    wb.close()  # 用完就关
     ytConfigList = {}
     for index in range(len(ytList)):
         temp_ytConfig = YTConfigDataStruct()
@@ -198,7 +198,8 @@ def getYtConfigFromConfigFile(devConfigFilePath: Union[Path, str] = None) -> Dic
 
 
 def YtBindDevConfigGenerate():
-    # 获取月台绑定的HCVR设备配置信息
+    # 这是一个生成器，用于获取月台绑定的设备配置信息
+    # 上层用send发送月台索引到这，查到之后把配置yield出去
     ytBindConfigDict = getYtConfigFromConfigFile()  # 读取设备配置表
     while True:
         ytName = yield

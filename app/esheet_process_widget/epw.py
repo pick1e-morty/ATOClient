@@ -21,7 +21,7 @@ from openpyxl.utils.exceptions import InvalidFileException
 # mainwindow那边定义logger，子组件这边共用的，不过是没有独立的作用域标记了，但文件地址也能说明问题了
 
 
-class EPW_Widget(Init_EPW_Widget):
+class EPW_Class(Init_EPW_Widget):
     def __init__(self, config):
         super().__init__(config)  # 调用父类构造函数，创建窗体
         self.setAcceptDrops(True)  # 开启拖拽
@@ -245,8 +245,8 @@ class EPW_Widget(Init_EPW_Widget):
                 InfoBar.success(title='成功', content=f"已重新加载{selectedItemText}", orient=Qt.Horizontal, isClosable=True,
                                 position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
             else:
-                InfoBar.warning(title='错误', content=f"重新加载{selectedItemText}失败", orient=Qt.Horizontal, isClosable=True,
-                                position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+                InfoBar.error(title='错误', content=f"重新加载{selectedItemText}失败", orient=Qt.Horizontal, isClosable=True,
+                              position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
         else:
             InfoBar.warning(title='警告', content="未选中任何项目", orient=Qt.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
@@ -420,7 +420,7 @@ class EPW_Widget(Init_EPW_Widget):
         # 删除月台按钮被按下
         selectItems = self.ui.sameYTCount_TW.selectionModel().selectedRows(SYTTWEnum.YT.value)
         if selectItems:
-            for modelIndex in self.ui.sameYTCount_TW.selectionModel().selectedRows(SYTTWEnum.YT.value):
+            for modelIndex in selectItems:
                 delete_YtName = self.ui.sameYTCount_TW.itemFromIndex(modelIndex).text()
                 for row in range(self.ui.excelData_TW.rowCount() - 1, -1, -1):
                     yTName = self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
@@ -433,21 +433,65 @@ class EPW_Widget(Init_EPW_Widget):
             InfoBar.warning(title='警告', content="未选中任何月台", orient=Qt.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
 
+    @pyqtSlot(bool)
+    def on_autoDeleteUnConfiguredYT_SB_checkedChanged(self, isChecked):
+        # 删除未配置月台按钮被按下
+        # 这个方法忽略了isChecked信号带参。我重新做了isChecked()方法判断，这样上层可以直接用这个方法来调整界面，而不用担心该传true还是false
+        # 每次改变sameYTCount_TW的数据后都需要调用这个方法来刷新界面
+        if self.ui.autoDeleteUnConfiguredYT_SB.isChecked():
+            # 删除未配置月台
+            for index in range(self.ui.sameYTCount_TW.rowCount()):
+                channelText = self.ui.sameYTCount_TW.item(index, SYTTWEnum.Channel.value).text()
+                if channelText == "未配置":
+                    delete_YtName = self.ui.sameYTCount_TW.item(index, SYTTWEnum.YT.value).text()
+                    for row in range(self.ui.excelData_TW.rowCount() - 1, -1, -1):
+                        yTName = self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
+                        if yTName == delete_YtName:
+                            self.ui.excelData_TW.removeRow(row)
+            self.afterDelete_RecalculateSameYTCountTableWidgetData()
+
+    @pyqtSlot(bool)
+    def _2on_autoDeleteUnConfiguredYT_SB_checkedChanged(self, isChecked):
+        # 删除未配置月台按钮被按下
+        # 这个方法忽略了isChecked信号带参。我重新做了isChecked()方法判断，这样上层可以直接用这个方法来调整界面，而不用担心该传true还是false
+        # 只需要对原始数据进行一次删除就够了，原始数据来源于handleExcelFileData2ItemData,只有两个按钮调用了这个方法
+        # 所以删除未配置月台的这个操作要在handleExcelFileData2ItemData中做
+
+        # 做月台名称和行号的映射，value是个list，存放行号
+        ytNameDict = {}
+        for row in range(self.ui.excelData_TW.rowCount()):
+            ytName = self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
+            ytNameDict[ytName] = ytNameDict.get(ytName, []) + [row]
+
+        # 取出所有未配置月台的名称
+        unConfiguredYtNameList = []
+        for row in range(self.ui.sameYTCount_TW.rowCount()):
+            channelText = self.ui.sameYTCount_TW.item(row, SYTTWEnum.Channel.value).text()
+            if channelText == "未配置":
+                unConfiguredYtNameList.append(self.ui.sameYTCount_TW.item(row, SYTTWEnum.YT.value).text())
+
+        rows_to_delete = []  # 创建一个列表用来存储准备删除的行号
+        for ytName in unConfiguredYtNameList:
+            rows_to_delete.extend(ytNameDict[ytName])
+        rows_to_delete.sort(reverse=True)  # 倒序删除不会影响index
+        for row in rows_to_delete:
+            self.ui.excelData_TW.removeRow(row)
+        self.afterDelete_RecalculateSameYTCountTableWidgetData()
+
+
+# 写完这个就可以用viztracer跑一下速度看看
 
 if __name__ == "__main__":  # 用于当前窗体测试
     from app.utils.aboutconfig import configini
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
-    forms = EPW_Widget(configini)  # 创建窗体
-
-    # TODO flow组件，自己挪按钮进去吧
-
+    forms = EPW_Class(configini)  # 创建窗体
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
     __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
     # forms.addFilePathsToexcelFile_LWData([__filePath1])
-    forms.addFilePathsToexcelFile_LWData([__filePath1, __filePath2])
-    forms.splashScreen.finish()
+    forms.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
     forms.show()
+    forms.ui.autoDeleteUnConfiguredYT_SB.setChecked(True)
 
     sys.exit(app.exec_())
