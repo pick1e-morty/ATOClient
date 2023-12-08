@@ -33,7 +33,7 @@ class Init_EPW_Widget(QWidget):
         # self.initFlowLayout()
         # 仅仅是美化的修改
         self.moveSwitchButtonIndicator2Right(self.ui.customFormat_SB)
-        self.moveSwitchButtonIndicator2Right(self.ui.autoDeleteUnConfiguredYT_SB)
+        # self.moveSwitchButtonIndicator2Right(self.ui.autoDeleteUnConfiguredYT_SB)
 
         # 三个组件的右键菜单
         self.ui.excelFile_LW.installEventFilter(self)

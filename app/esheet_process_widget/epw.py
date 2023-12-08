@@ -307,34 +307,33 @@ class EPW_Class(Init_EPW_Widget):
     def keepAppointNumShipIDInYt(self, keepNum: int):
         # 在选中月台中仅保留指定数量的单号
         selectedRows = self.ui.sameYTCount_TW.selectionModel().selectedRows(SYTTWEnum.YT.value)
-        if selectedRows:
-            deleteShipIdNumDict = {}
-            for modelIndex in selectedRows:
-                row = modelIndex.row()  # 用QModelIndex更规矩一点
-                ytName = self.ui.sameYTCount_TW.item(row, SYTTWEnum.YT.value).text()  # 我晓得modelIndex指的我现在要取的item
-                shipCount = int(self.ui.sameYTCount_TW.item(row, SYTTWEnum.Count.value).text())
-                if shipCount > keepNum:  # 同月台的单号总量大于想要保留的数量才需要删
-                    deleteNum = shipCount - keepNum
-                    deleteShipIdNumDict[ytName] = deleteNum
-            # 上面取到了要删除的月台中的单号数量和月台名称
-            # 下面开始删除行
-            for ytName, deleteNum in deleteShipIdNumDict.items():
-                rows_to_delete = []
-                for row in range(self.ui.excelData_TW.rowCount()):
-                    item = self.ui.excelData_TW.item(row, EDTWEnum.YT.value)  # 遍历excelData_TW表格组件的月台列
-                    if item and item.text() == ytName:
-                        rows_to_delete.append(row)
-                    if len(rows_to_delete) >= deleteNum:  # 攒够了就开始删
-                        break
-                # 删除指定数量的行
-                for row in reversed(rows_to_delete):
-                    self.ui.excelData_TW.removeRow(row)
-            self.afterDelete_RecalculateSameYTCountTableWidgetData()
-            InfoBar.success(title='成功', content=f"已保留指定数量月台中的单号数量", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
-        else:
+        if not selectedRows:
             InfoBar.warning(title='警告', content="未选中任何月台", orient=Qt.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
+            return
+        deleteShipIdNumDict = {}
+        for modelIndex in selectedRows:
+            row = modelIndex.row()  # 用QModelIndex更规矩一点
+            ytName = self.ui.sameYTCount_TW.item(row, SYTTWEnum.YT.value).text()  # 我晓得modelIndex指的我现在要取的item
+            shipCount = int(self.ui.sameYTCount_TW.item(row, SYTTWEnum.Count.value).text())
+            if shipCount > keepNum:  # 同月台的单号总量大于想要保留的数量才需要删
+                deleteNum = shipCount - keepNum
+                deleteShipIdNumDict[ytName] = deleteNum
+        # 上面取到了要删除的月台中的单号数量和月台名称
+        ytNameDict = {}
+        for row in range(self.ui.excelData_TW.rowCount()):
+            ytName = self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
+            ytNameDict[ytName] = ytNameDict.get(ytName, []) + [row]
+
+        rows_to_delete = []  # 创建一个列表用来存储准备删除的行号
+        for ytName in deleteShipIdNumDict.keys():
+            rows_to_delete.extend(ytNameDict[ytName][:deleteShipIdNumDict[ytName]])
+        rows_to_delete.sort(reverse=True)  # 倒序删除不会影响index
+        for row in rows_to_delete:
+            self.ui.excelData_TW.removeRow(row)
+        self.afterDelete_RecalculateSameYTCountTableWidgetData()
+        InfoBar.success(title='成功', content=f"已保留指定数量月台中的单号数量", orient=Qt.Horizontal, isClosable=True,
+                        position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
 
     def afterDelete_RecalculateSameYTCountTableWidgetData(self):
         # 由于整个EPW只有删除的操作，在删除操作完成之后重新计算相同月台表格的数据
@@ -419,73 +418,50 @@ class EPW_Class(Init_EPW_Widget):
     def on_deleteSelectionYT_PB_clicked(self):
         # 删除月台按钮被按下
         selectItems = self.ui.sameYTCount_TW.selectionModel().selectedRows(SYTTWEnum.YT.value)
-        if selectItems:
-            for modelIndex in selectItems:
-                delete_YtName = self.ui.sameYTCount_TW.itemFromIndex(modelIndex).text()
-                for row in range(self.ui.excelData_TW.rowCount() - 1, -1, -1):
-                    yTName = self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
-                    if yTName == delete_YtName:
-                        self.ui.excelData_TW.removeRow(row)
-            self.afterDelete_RecalculateSameYTCountTableWidgetData()
-            InfoBar.success(title='成功', content=f"已删除选中月台", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
-        else:
+        if not selectItems:
             InfoBar.warning(title='警告', content="未选中任何月台", orient=Qt.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
+            return
+        ytNameList = []
+        for modelIndex in selectItems:
+            delete_YtName = self.ui.sameYTCount_TW.itemFromIndex(modelIndex).text()
+            ytNameList.append(delete_YtName)
+        self.deleteExcelData_TW_ItemByYTName(ytNameList)
+        InfoBar.success(title='成功', content=f"已删除选中月台", orient=Qt.Horizontal, isClosable=True,
+                        position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
 
-    @pyqtSlot(bool)
-    def on_autoDeleteUnConfiguredYT_SB_checkedChanged(self, isChecked):
-        # 删除未配置月台按钮被按下
-        # 这个方法忽略了isChecked信号带参。我重新做了isChecked()方法判断，这样上层可以直接用这个方法来调整界面，而不用担心该传true还是false
-        # 每次改变sameYTCount_TW的数据后都需要调用这个方法来刷新界面
-        if self.ui.autoDeleteUnConfiguredYT_SB.isChecked():
-            # 删除未配置月台
-            for index in range(self.ui.sameYTCount_TW.rowCount()):
-                channelText = self.ui.sameYTCount_TW.item(index, SYTTWEnum.Channel.value).text()
-                if channelText == "未配置":
-                    delete_YtName = self.ui.sameYTCount_TW.item(index, SYTTWEnum.YT.value).text()
-                    for row in range(self.ui.excelData_TW.rowCount() - 1, -1, -1):
-                        yTName = self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
-                        if yTName == delete_YtName:
-                            self.ui.excelData_TW.removeRow(row)
-            self.afterDelete_RecalculateSameYTCountTableWidgetData()
-
-    @pyqtSlot(bool)
-    def _2on_autoDeleteUnConfiguredYT_SB_checkedChanged(self, isChecked):
-        # 删除未配置月台按钮被按下
-        # 这个方法忽略了isChecked信号带参。我重新做了isChecked()方法判断，这样上层可以直接用这个方法来调整界面，而不用担心该传true还是false
-        # 只需要对原始数据进行一次删除就够了，原始数据来源于handleExcelFileData2ItemData,只有两个按钮调用了这个方法
-        # 所以删除未配置月台的这个操作要在handleExcelFileData2ItemData中做
-
-        # 做月台名称和行号的映射，value是个list，存放行号
+    def deleteExcelData_TW_ItemByYTName(self, ytNameList: List[str]):
+        # 删除excelData_TW中指定月台的数据
+        # 做月台名称和行号的映射，value是个list，存放行数
         ytNameDict = {}
         for row in range(self.ui.excelData_TW.rowCount()):
             ytName = self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
             ytNameDict[ytName] = ytNameDict.get(ytName, []) + [row]
 
+        rows_to_delete = []  # 创建一个列表用来存储准备删除的行号
+        for ytName in ytNameList:
+            rows_to_delete.extend(ytNameDict[ytName])
+        rows_to_delete.sort(reverse=True)  # 倒序删除不会影响index
+        for row in rows_to_delete:
+            self.ui.excelData_TW.removeRow(row)
+        self.afterDelete_RecalculateSameYTCountTableWidgetData()
+
+    @pyqtSlot(bool)
+    def on_deleteUnConfiguredYT_PB_clicked(self, isChecked):
+        # 删除未配置月台按钮被按下
+        # 这个方法忽略了isChecked信号带参。我重新做了isChecked()方法判断，这样上层可以直接用这个方法来调整界面，而不用担心该传true还是false
+        # 只需要对原始数据进行一次删除就够了，原始数据来源于handleExcelFileData2ItemData,只有两个按钮调用了这个方法
+        # 所以删除未配置月台的这个操作要在handleExcelFileData2ItemData中做
         # 取出所有未配置月台的名称
         unConfiguredYtNameList = []
         for row in range(self.ui.sameYTCount_TW.rowCount()):
             channelText = self.ui.sameYTCount_TW.item(row, SYTTWEnum.Channel.value).text()
             if channelText == "未配置":
                 unConfiguredYtNameList.append(self.ui.sameYTCount_TW.item(row, SYTTWEnum.YT.value).text())
-
-        rows_to_delete = []  # 创建一个列表用来存储准备删除的行号
-        for ytName in unConfiguredYtNameList:
-            rows_to_delete.extend(ytNameDict[ytName])
-        rows_to_delete.sort(reverse=True)  # 倒序删除不会影响index
-        for row in rows_to_delete:
-            self.ui.excelData_TW.removeRow(row)
-        self.afterDelete_RecalculateSameYTCountTableWidgetData()
-    # 无索引36ms600us          1127
-    # 无索引14ms408us          1128
-    # 创建Dict索引8ms253us      1127
-    # 创建Dict索引2ms460us      1128
-
-    # 结果特别棒，Dict yyds
-    # 记得把on_deleteSelectionYT_PB_clicked也改一下
-    # 中间这部操作独立出来，让他俩都用上
-
+        if unConfiguredYtNameList:
+            self.deleteExcelData_TW_ItemByYTName(unConfiguredYtNameList)
+            InfoBar.success(title='成功', content=f"已删除未配置月台", orient=Qt.Horizontal, isClosable=True,
+                            position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
@@ -499,6 +475,5 @@ if __name__ == "__main__":  # 用于当前窗体测试
     # forms.addFilePathsToexcelFile_LWData([__filePath1])
     forms.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
     forms.show()
-    forms.ui.autoDeleteUnConfiguredYT_SB.setChecked(True)
 
     sys.exit(app.exec_())
