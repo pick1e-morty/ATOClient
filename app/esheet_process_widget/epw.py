@@ -477,9 +477,16 @@ class EPW_Class(Init_EPW_Widget):
         for row in rows_to_delete:
             self.ui.excelData_TW.removeRow(row)
         self.afterDelete_RecalculateSameYTCountTableWidgetData()
+    # 无索引36ms600us          1127
+    # 无索引14ms408us          1128
+    # 创建Dict索引8ms253us      1127
+    # 创建Dict索引2ms460us      1128
+
+    # 结果特别棒，Dict yyds
+    # 记得把on_deleteSelectionYT_PB_clicked也改一下
+    # 中间这部操作独立出来，让他俩都用上
 
 
-# 写完这个就可以用viztracer跑一下速度看看
 
 if __name__ == "__main__":  # 用于当前窗体测试
     from app.utils.aboutconfig import configini
