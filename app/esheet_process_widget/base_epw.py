@@ -1,15 +1,14 @@
 import sys
-from pathlib import Path
 
-from PyQt5.QtCore import pyqtSlot, QEvent, QSize, Qt, QPropertyAnimation, QRect, QEasingCurve
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QTableWidget, QAction, QSizePolicy)
-from qfluentwidgets import RoundMenu, Action, MenuAnimationType, SplashScreen, FlowLayout, SwitchButton
+from PyQt5.QtCore import pyqtSlot, QEvent, Qt, QPropertyAnimation, QRect, QEasingCurve
+from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QAction, QSizePolicy)
+from qfluentwidgets import RoundMenu, Action, MenuAnimationType, FlowLayout, SwitchButton
+from app.utils.forms_config import configini
 
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_EPW_Widget
 
 
-class Init_EPW_Widget(QWidget):
+class Base_EPW_Widget(QWidget):
     """
     这边实现的功能
     1. 左边的ListWidget和右边两个TableWidget的右键菜单
@@ -18,16 +17,15 @@ class Init_EPW_Widget(QWidget):
     4. 开始屏幕的加载启动（关闭方法则是两边的文件入口都有）
     """
 
-    def __init__(self, config, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.ui = Ui_EPW_Widget()  # 创建UI对象
         self.ui.setupUi(self)  # 构造UI界面
 
-        self.epw_config = config["epw"]
+        self.epw_config = configini["epw"]
         self.initUI()
 
     def initUI(self):
-        # self.loadSplashScreen()
         self.initKeepShipNum_SPB()
         self.initCustomFormat_CW()
         # self.initFlowLayout()
@@ -94,18 +92,6 @@ class Init_EPW_Widget(QWidget):
         self.ui.scanTimeCID_BL.setVisible(False)
         self.ui.scanTimeFormat_LE.setVisible(False)
         self.ui.scanTimeFormat_BL.setVisible(False)
-
-    def loadSplashScreen(self):
-        # 加载启动屏幕
-        logoFilePath = Path(__file__).parent.parent / "AppData/logo.png"
-        self.setWindowIcon(QIcon(str(logoFilePath)))
-        self.splashScreen = SplashScreen(self.windowIcon(), self)
-        self.splashScreen.setTitleBar(QWidget())  # 去掉启动画面中右上角的三个窗口按钮
-        formsWidth = self.size().width()
-        formsHeigth = self.size().height()
-        self.splashScreen.setIconSize(QSize(formsWidth // 2, formsHeigth // 2))
-        self.show()
-        QApplication.processEvents()
 
     @pyqtSlot(bool)
     def on_customFormat_SB_checkedChanged(self, isChecked):
@@ -216,10 +202,10 @@ class Init_EPW_Widget(QWidget):
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
-    from app.utils.aboutconfig import configini
+    from app.utils.forms_config import configini
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
-    forms = Init_EPW_Widget(configini)  # 创建窗体
+    forms = Base_EPW_Widget()  # 创建窗体
     forms.show()
 
     sys.exit(app.exec_())

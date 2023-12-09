@@ -3,5 +3,7 @@
 __pycache__
 月台配置.xlsx
 
+*.xlsx
+
 # viztracer的结果文件
 result.json

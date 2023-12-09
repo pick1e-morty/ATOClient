@@ -9,6 +9,7 @@ from typing import Tuple, List
 
 from app.download_video_widget.UI.ui_DownloadVideo import Ui_DVW_Widget
 from app.esheet_process_widget.epw_define import ExcelDataTableWidgetItemDataStruct, ExcelFileListWidgetItemDataStruct
+from app.utils.dev_config import devConfigGenerate
 
 
 class DVW_Class(QWidget):
@@ -35,15 +36,14 @@ class DVW_Class(QWidget):
                 ytName = edtw_ItemData.ytName
                 classifyByYT[ytName] = classifyByYT.get(ytName, []) + [[filePath, scanTime]]
         # 然后就可以月台匹配设备配置了
-
+        print(classifyByYT)
         classifyByDevIP = {}
         for ytName, path_time in classifyByYT.items():
             # 先拿配置
-            pass
+            devConfig = devConfigGenerate.send(ytName)
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
-    from app.utils.aboutconfig import configini
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
     forms = DVW_Class()  # 创建窗体

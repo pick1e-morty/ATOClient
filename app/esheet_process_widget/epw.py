@@ -1,29 +1,24 @@
 import sys
 import os
 from collections import Counter
-from pathlib import Path
 
-from PyQt5.QtCore import Qt, pyqtSlot, QEvent, QItemSelectionModel, QSize
-from PyQt5.QtGui import QIcon, QContextMenuEvent
-from PyQt5.QtWidgets import (QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView, QWidget)
+from PyQt5.QtCore import Qt, pyqtSlot, QEvent, QItemSelectionModel
+from PyQt5.QtWidgets import QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView
 from loguru import logger
 from typing import List
-from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox, RoundMenu, Action, MenuAnimationType, SplashScreen
-from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, DevConfigFileNotFoundError, \
-    DevConfigFileInvalidError, FileContentIsEmptyException, getSameYTCountTableWidgetData, \
-    DevConfigFileContentIsEmptyException
-from app.esheet_process_widget.epw_define import SYTTWEnum, EDTWEnum, ExcelFileListWidgetItemDataStruct, \
-    SameYTCountTableWidgetItemDataStruct, ExcelDataTableWidgetItemDataStruct
-from app.esheet_process_widget.init_epw import Init_EPW_Widget
+from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
+from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, FileContentIsEmptyException, getSameYTCountTableWidgetData
+from app.esheet_process_widget.epw_define import SYTTWEnum, EDTWEnum, ExcelFileListWidgetItemDataStruct, SameYTCountTableWidgetItemDataStruct, ExcelDataTableWidgetItemDataStruct
+from app.esheet_process_widget.base_epw import Base_EPW_Widget
 from openpyxl.utils.exceptions import InvalidFileException
 
 
 # mainwindow那边定义logger，子组件这边共用的，不过是没有独立的作用域标记了，但文件地址也能说明问题了
 
 
-class EPW_Class(Init_EPW_Widget):
-    def __init__(self, config, parent=None):
-        super().__init__(config, parent)  # 调用父类构造函数，创建窗体
+class EPW_Class(Base_EPW_Widget):
+    def __init__(self, parent=None):
+        super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.setAcceptDrops(True)  # 开启拖拽
         self.init_ui()
 
@@ -85,7 +80,6 @@ class EPW_Class(Init_EPW_Widget):
             item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
             col = EDTWEnum.ShipID.value
             self.ui.excelData_TW.setItem(index, col, item)
-
 
             item = QTableWidgetItem(str(edtw_ItemDataList[index].ytName))
             item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
@@ -214,15 +208,6 @@ class EPW_Class(Init_EPW_Widget):
             loggerErrorText = f"文件不存在，注意文件路径中不能含有空格\n{filePath}"
             MessageBox('错误', loggerErrorText, self).exec_()
             logger.warning(loggerErrorText)
-        except DevConfigFileNotFoundError as ErrorText:  # 设备配置文件路径是写的相对的，写在处理函数中的，可能会出现点问题吧
-            MessageBox('错误', str(ErrorText), self).exec_()
-            logger.warning(str(ErrorText))
-        except DevConfigFileInvalidError as ErrorText:  # 设备配置文件格式不合法，非xlsx，xls或文件名中有空格。
-            MessageBox('错误', str(ErrorText), self).exec_()
-            logger.warning(str(ErrorText))
-        except DevConfigFileContentIsEmptyException as ErrorText:
-            MessageBox('错误', str(ErrorText), self).exec_()
-            logger.warning(str(ErrorText))
         else:
             excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 统一保存
             excelFile_LW_ItemData.edtw_ItemDataList = edtw_ItemDataList
@@ -468,10 +453,9 @@ class EPW_Class(Init_EPW_Widget):
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
-    from app.utils.aboutconfig import configini
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
-    forms = EPW_Class(configini)  # 创建窗体
+    forms = EPW_Class()  # 创建窗体
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
     __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
