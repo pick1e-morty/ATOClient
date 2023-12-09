@@ -22,8 +22,8 @@ from openpyxl.utils.exceptions import InvalidFileException
 
 
 class EPW_Class(Init_EPW_Widget):
-    def __init__(self, config):
-        super().__init__(config)  # 调用父类构造函数，创建窗体
+    def __init__(self, config, parent=None):
+        super().__init__(config, parent)  # 调用父类构造函数，创建窗体
         self.setAcceptDrops(True)  # 开启拖拽
         self.init_ui()
 
@@ -35,19 +35,7 @@ class EPW_Class(Init_EPW_Widget):
         # 用户选择不同的项目触发该方法
         if previous is not None:
             # 如果上一个item不为空，就先保存
-            # 从窗体中获取排序数据和相同月台数量及previousItem中excel文件路径
-            # 由于我重写了该方法，所以此时界面上的数据还没有改变，
-            # 下面两个方法是从界面上取得的数值，而非从curItem或preItem
-            in_edtw_ItemDataList = self.getDataInExcelData_TW()
-            in_sytctw_ItemDataList = self.getDataInSameYTCount_TW()
-            # 但curItem, preItem确实改变了，而excelFilePath又没有放到界面上
-            # 所以需要一些稍微“另类”的方法来获取到这个excelFilePath
-            # 更加符合直觉的方法应该是QAbstractItemView.selectionChanged(selected, deselected)
-            excelFilePath = self.get_FilePathInExcelFile_LW_ItemData()
-            excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 创建excelFile_LW_ItemDataStruct对象
-            excelFile_LW_ItemData.edtw_ItemDataList = in_edtw_ItemDataList
-            excelFile_LW_ItemData.sytctw_ItemDataList = in_sytctw_ItemDataList
-            excelFile_LW_ItemData.excelFilePath = excelFilePath
+            excelFile_LW_ItemData = self.getExcelFile_LW_ItemData()
             previous.setData(Qt.UserRole, excelFile_LW_ItemData)
         if current is not None:
             # 如果当前item不为空，就加载
@@ -56,6 +44,22 @@ class EPW_Class(Init_EPW_Widget):
         else:
             # 如果当前item为空，就清空EPW窗体中所有的Text数据
             self.clearEPW_WidgetText()
+
+    def getExcelFile_LW_ItemData(self):
+        # 从窗体中获取排序数据和相同月台数量及previousItem中excel文件路径
+        # 由于我重写了该方法，所以此时界面上的数据还没有改变，
+        # 下面两个方法是从界面上取得的数值，而非从curItem或preItem
+        in_edtw_ItemDataList = self.getDataInExcelData_TW()
+        in_sytctw_ItemDataList = self.getDataInSameYTCount_TW()
+        # 但curItem, preItem确实改变了，而excelFilePath又没有放到界面上
+        # 所以需要一些稍微“另类”的方法来获取到这个excelFilePath
+        # 更加符合直觉的方法应该是QAbstractItemView.selectionChanged(selected, deselected)
+        excelFilePath = self.get_FilePathInExcelFile_LW_ItemData()
+        excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 创建excelFile_LW_ItemDataStruct对象
+        excelFile_LW_ItemData.edtw_ItemDataList = in_edtw_ItemDataList
+        excelFile_LW_ItemData.sytctw_ItemDataList = in_sytctw_ItemDataList
+        excelFile_LW_ItemData.excelFilePath = excelFilePath
+        return excelFile_LW_ItemData
 
     @pyqtSlot()
     def get_FilePathInExcelFile_LW_ItemData(self):
@@ -82,6 +86,7 @@ class EPW_Class(Init_EPW_Widget):
             col = EDTWEnum.ShipID.value
             self.ui.excelData_TW.setItem(index, col, item)
 
+
             item = QTableWidgetItem(str(edtw_ItemDataList[index].ytName))
             item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
             col = EDTWEnum.YT.value
@@ -92,6 +97,7 @@ class EPW_Class(Init_EPW_Widget):
             col = EDTWEnum.ScanTime.value
             self.ui.excelData_TW.setItem(index, col, item)
         self.ui.excelData_TW.resizeColumnsToContents()  # 调整列宽
+        self.ui.excelData_TW.updateSelectedRows()  # 刷新主题显示状态
 
     @pyqtSlot()
     def loadsameYTCount_TW(self, sytctw_ItemDataList: List[SameYTCountTableWidgetItemDataStruct]):
@@ -113,6 +119,7 @@ class EPW_Class(Init_EPW_Widget):
             col = SYTTWEnum.Channel.value
             self.ui.sameYTCount_TW.setItem(index, col, item)
         self.ui.sameYTCount_TW.resizeColumnsToContents()  # 调整列宽
+        self.ui.sameYTCount_TW.updateSelectedRows()  # 刷新主题显示状态
 
     def getDataInExcelData_TW(self) -> List[ExcelDataTableWidgetItemDataStruct]:
         # 按照格式定义存放excelData_TW中的所有数据
@@ -227,8 +234,8 @@ class EPW_Class(Init_EPW_Widget):
         # 获取在excelFile_LW组件中已经添加过的指定的文件地址
         FindedItem = self.ui.excelFile_LW.findItems(fileName, Qt.MatchExactly)
         excelFile_LW_ItemData = FindedItem[0].data(Qt.UserRole)
-        inaItemDatafilePath = excelFile_LW_ItemData.excelFilePath
-        return inaItemDatafilePath
+        inItemDatafilePath = excelFile_LW_ItemData.excelFilePath
+        return inItemDatafilePath
 
     @pyqtSlot()
     def on_reprocessExcelFile_PB_clicked(self):
@@ -321,12 +328,12 @@ class EPW_Class(Init_EPW_Widget):
                 deleteShipIdNumDict[ytName] = deleteNum
         # 上面取到了要删除的月台中的单号数量和月台名称
         ytNameDict = {}
-        for row in range(self.ui.excelData_TW.rowCount()):
+        for row in range(self.ui.excelData_TW.rowCount()):  # 全取行数后做切片和取中判行数，我选了前者
             ytName = self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
             ytNameDict[ytName] = ytNameDict.get(ytName, []) + [row]
 
         rows_to_delete = []  # 创建一个列表用来存储准备删除的行号
-        for ytName in deleteShipIdNumDict.keys():
+        for ytName in deleteShipIdNumDict.keys():  # ytNameDict存的是所有的yt行数，我这里只需要拿deleteNum个行数进行删除
             rows_to_delete.extend(ytNameDict[ytName][:deleteShipIdNumDict[ytName]])
         rows_to_delete.sort(reverse=True)  # 倒序删除不会影响index
         for row in rows_to_delete:
@@ -449,10 +456,6 @@ class EPW_Class(Init_EPW_Widget):
     @pyqtSlot(bool)
     def on_deleteUnConfiguredYT_PB_clicked(self, isChecked):
         # 删除未配置月台按钮被按下
-        # 这个方法忽略了isChecked信号带参。我重新做了isChecked()方法判断，这样上层可以直接用这个方法来调整界面，而不用担心该传true还是false
-        # 只需要对原始数据进行一次删除就够了，原始数据来源于handleExcelFileData2ItemData,只有两个按钮调用了这个方法
-        # 所以删除未配置月台的这个操作要在handleExcelFileData2ItemData中做
-        # 取出所有未配置月台的名称
         unConfiguredYtNameList = []
         for row in range(self.ui.sameYTCount_TW.rowCount()):
             channelText = self.ui.sameYTCount_TW.item(row, SYTTWEnum.Channel.value).text()

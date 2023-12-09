@@ -6,7 +6,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QTableWidget, QAction, QSizePolicy)
 from qfluentwidgets import RoundMenu, Action, MenuAnimationType, SplashScreen, FlowLayout, SwitchButton
 
-from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_Form
+from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_EPW_Widget
 
 
 class Init_EPW_Widget(QWidget):
@@ -18,9 +18,9 @@ class Init_EPW_Widget(QWidget):
     4. 开始屏幕的加载启动（关闭方法则是两边的文件入口都有）
     """
 
-    def __init__(self, config):
-        super().__init__()  # 调用父类构造函数，创建窗体
-        self.ui = Ui_Form()  # 创建UI对象
+    def __init__(self, config, parent=None):
+        super().__init__(parent)  # 调用父类构造函数，创建窗体
+        self.ui = Ui_EPW_Widget()  # 创建UI对象
         self.ui.setupUi(self)  # 构造UI界面
 
         self.epw_config = config["epw"]
@@ -44,6 +44,7 @@ class Init_EPW_Widget(QWidget):
         self.init_sameYTCount_TW_Menu()
         # 下面是方法依赖的UI设定，不可更改
         self.ui.excelFile_LW.setSelectionMode(QListWidget.SingleSelection)  # get_FilePathInExcelFile_LW_ItemData
+
     @staticmethod
     def moveSwitchButtonIndicator2Right(switchButton: SwitchButton):
         # 用于将Designer生成的SwithButton中的Indicator移动到右边，当然Designer中没有修改该属性的接口
@@ -175,12 +176,15 @@ class Init_EPW_Widget(QWidget):
         self.sameYTCount_TW_Menu = RoundMenu(parent=self)
         self.sameYTCount_TW_Menu.addMenu(self.ui.keepShipNum_SPB.flyout)
         self.sameYTCount_TW_Menu.addSeparator()
+        action_deleteUnConfiguredYT = Action("删除未配置月台")
+        action_deleteUnConfiguredYT.triggered.connect(lambda: self.ui.deleteUnConfiguredYT_PB.click())
         action_selectAllYT = Action("全选月台")
         action_selectAllYT.triggered.connect(lambda: self.ui.selectAllYT_PB.click())
         action_reverseSelectionYT = Action("反选月台")
         action_reverseSelectionYT.triggered.connect(lambda: self.ui.reverseSelectionYT_PB.click())
         action_deleteSelectionYT = Action("删除选中月台")
         action_deleteSelectionYT.triggered.connect(lambda: self.ui.deleteSelectionYT_PB.click())
+        self.sameYTCount_TW_Menu.addAction(action_deleteUnConfiguredYT)
         self.sameYTCount_TW_Menu.addAction(action_selectAllYT)
         self.sameYTCount_TW_Menu.addAction(action_reverseSelectionYT)
         self.sameYTCount_TW_Menu.addAction(action_deleteSelectionYT)

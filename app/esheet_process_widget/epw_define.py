@@ -80,30 +80,3 @@ class YTConfigDataStruct(object):
         self.devPort = devPort
         self.devUserName = devUserName
         self.devPassword = devPassword
-
-# def filteredDataContainsNone(self):
-#     # 去除原始数据中包含None的数据
-#
-#     shipIdData = self.shipID
-#     scanTimeData = self.scanTime
-#     ytData = self.yt
-#
-#     dataLength = len(shipIdData)
-#     logger.info("可能包含None的总数据行数为：" + str(dataLength))
-#     for i in range(dataLength - 1, -1, -1):
-#         if shipIdData[i] is None and scanTimeData[i] is None and ytData[i] is None:  # 三列都是空的开trace在报
-#             logger.trace("检测到第" + str(i) + "行中含有None,该行不再处理,注意审查修补")
-#             [obj.pop(i) for obj in [shipIdData, scanTimeData, ytData]]
-#         elif shipIdData[i] is None or scanTimeData[i] is None or ytData[i] is None:
-#             # 其中一列是空的话还是有必要做个warn log，但没必要弹窗
-#             logger.warning("检测到第" + str(i) + "行中含有None,该行不再处理,注意审查修补")
-#             [obj.pop(i) for obj in [shipIdData, scanTimeData, ytData]]
-#
-# def sortedBtYt(self):
-#     # 先把数据横向组合zip，然后按照yt元素进行sorted，最后再解开放回原位
-#     tempZip = zip(self.shipID, self.yt, self.scanTime)
-#     tempList = list(tempZip)
-#     tempData = sorted(tempList, key=lambda x: x[EDTWEnum.YT.value])
-#     self.shipID, self.yt, self.scanTime = zip(*tempData)
-#
-#     # sortedData = sorted(notIncludedNoneRawData, key=lambda x: x[EDTWEnum.YT.value])  # 按照月台号排序
