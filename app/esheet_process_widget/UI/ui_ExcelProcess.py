@@ -138,7 +138,7 @@ class Ui_EPW_Widget(object):
         self.gridLayout_3 = QtWidgets.QGridLayout(self.CardWidget_3)
         self.gridLayout_3.setObjectName("gridLayout_3")
         self.excelData_TW = TableWidget(self.CardWidget_3)
-        self.excelData_TW.setMinimumSize(QtCore.QSize(342, 0))
+        self.excelData_TW.setMinimumSize(QtCore.QSize(419, 0))
         self.excelData_TW.setObjectName("excelData_TW")
         self.excelData_TW.setColumnCount(3)
         self.excelData_TW.setRowCount(9)

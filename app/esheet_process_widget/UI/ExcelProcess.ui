@@ -233,7 +233,7 @@
           <widget class="TableWidget" name="excelData_TW">
            <property name="minimumSize">
             <size>
-             <width>342</width>
+             <width>419</width>
              <height>0</height>
             </size>
            </property>

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QApplication
 from loguru import logger
 from typing import Union, Dict
 
-from qfluentwidgets import MessageBox
+from qfluentwidgets import MessageBox, Dialog
 
 from app.esheet_process_widget.epw_define import YTCTFEnum, YTConfigDataStruct
 from openpyxl import load_workbook
@@ -111,25 +111,10 @@ def YtBindDevConfigGenerate():
         ytConfig = ytBindConfigDict.get(ytName, None)
         yield ytConfig
 
-devConfigGenerate = YtBindDevConfigGenerate()  # 全局变量保活
-next(devConfigGenerate)  # 启动生成器
 
-# 不是在主窗口抓的Exception
-# 那能不能抓？有没有办法抓？
-
-if __name__ == "__main__":
-    try:
-        devConfigGenerate = YtBindDevConfigGenerate()  # 全局变量保活
-        next(devConfigGenerate)  # 启动生成器
-    except (DevConfigFileNotFoundError, DevConfigFileInvalidError, DevConfigFileContentIsEmptyException, DevConfigFileContentIsInvalidException) as ErrorText:  # 设备配置文件路径是写的相对的，写在处理函数中的，可能会出现点问题吧
-        app = QApplication(sys.argv)
-        widget = QWidget()
-        widget.show()
-        msgBox = MessageBox('错误', str(ErrorText), widget)
-        msgBox.yesButton.setText('重试')
-        msgBox.cancelButton.setText('退出')
-        if msgBox.exec_():  # TODO 这个重启功能应该是不能用的，不过可以占个位置
-            import os
-            os.execl(sys.executable, sys.executable, *sys.argv)
-        logger.error(str(ErrorText))
-
+try:
+    devConfigGenerate = YtBindDevConfigGenerate()  # 全局变量保活
+    next(devConfigGenerate)  # 启动生成器
+except (DevConfigFileNotFoundError, DevConfigFileInvalidError, DevConfigFileContentIsEmptyException, DevConfigFileContentIsInvalidException) as ErrorText:  # 设备配置文件路径是写的相对的，写在处理函数中的，可能会出现点问题吧
+    logger.error(str(ErrorText))
+    devConfigGenerate = str(ErrorText)

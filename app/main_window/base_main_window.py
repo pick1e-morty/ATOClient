@@ -86,13 +86,13 @@ class BaseMainWindow(FramelessWindow):
         # self.navigationInterface.setCollapsible(False)
 
     def initWindow(self):
-        self.resize(900, 700)
         self.setWindowIcon(QIcon('resource/logo.png'))
         # self.setWindowTitle('PyQt-Fluent-Widgets')
         self.titleBar.setAttribute(Qt.WA_StyledBackground)
 
         desktop = QApplication.desktop().availableGeometry()
         w, h = desktop.width(), desktop.height()
+        self.resize(w // 2 + 200, h)
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
         self.setQss()

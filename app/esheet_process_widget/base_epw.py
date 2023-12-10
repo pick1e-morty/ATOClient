@@ -1,12 +1,9 @@
 import sys
-
 from PyQt5.QtCore import pyqtSlot, QEvent, Qt, QPropertyAnimation, QRect, QEasingCurve
 from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QAction, QSizePolicy)
 from qfluentwidgets import RoundMenu, Action, MenuAnimationType, FlowLayout, SwitchButton
-from app.utils.forms_config import configini
-
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_EPW_Widget
-
+from app.utils.forms_config import formsConfigDict
 
 class Base_EPW_Widget(QWidget):
     """
@@ -22,7 +19,7 @@ class Base_EPW_Widget(QWidget):
         self.ui = Ui_EPW_Widget()  # 创建UI对象
         self.ui.setupUi(self)  # 构造UI界面
 
-        self.epw_config = configini["epw"]
+        self.epw_config = formsConfigDict["epw"]
         self.initUI()
 
     def initUI(self):
@@ -202,7 +199,6 @@ class Base_EPW_Widget(QWidget):
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
-    from app.utils.forms_config import configini
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
     forms = Base_EPW_Widget()  # 创建窗体

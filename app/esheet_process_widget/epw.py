@@ -440,6 +440,7 @@ class EPW_Class(Base_EPW_Widget):
 
     @pyqtSlot(bool)
     def on_deleteUnConfiguredYT_PB_clicked(self, isChecked):
+        print(self.ui.excelData_TW.size())
         # 删除未配置月台按钮被按下
         unConfiguredYtNameList = []
         for row in range(self.ui.sameYTCount_TW.rowCount()):
