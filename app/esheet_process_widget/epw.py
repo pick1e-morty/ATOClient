@@ -16,7 +16,7 @@ from openpyxl.utils.exceptions import InvalidFileException
 # mainwindow那边定义logger，子组件这边共用的，不过是没有独立的作用域标记了，但文件地址也能说明问题了
 
 
-class EPW_Class(Base_EPW_Widget):
+class EPWclass(Base_EPW_Widget):
     def __init__(self, parent=None):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.setAcceptDrops(True)  # 开启拖拽
@@ -455,7 +455,7 @@ class EPW_Class(Base_EPW_Widget):
 if __name__ == "__main__":  # 用于当前窗体测试
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
-    forms = EPW_Class()  # 创建窗体
+    forms = EPWclass()  # 创建窗体
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
     __filePath2 = os.path.join(__desktopPath, "1128.xlsx")

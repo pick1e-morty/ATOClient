@@ -24,7 +24,6 @@ class VdtStrNotUpperError(ValidateError):
 
 def is_string_all_upper(value):
     # 定义一个验证规则函数，要求value必须是一个全大写的字符串
-    print(value)
     if not isinstance(value, str):
         raise VdtTypeError(value)
     for i in value:

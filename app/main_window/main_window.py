@@ -16,8 +16,8 @@ class MainWindow(BaseMainWindow):
         self.loadSplashScreen()
 
     def start_init(self):
-        self.epwInterface = EPW_Class(self)
-        self.dvwInterface = DVW_Class(self)
+        self.epwInterface = EPWclass(self)
+        self.dvwInterface = DVWclass(self)
         self.addSubInterface(self.epwInterface, FIF.DOCUMENT, '文件处理')
         self.addSubInterface(self.dvwInterface, FIF.DOWNLOAD, '下载图片')
 
@@ -70,8 +70,8 @@ if __name__ == '__main__':
         msgBox.exec()  # 这里或许能加个重启应用
         exit(1)
 
-    from app.esheet_process_widget.epw import EPW_Class
-    from app.download_video_widget.dvw import DVW_Class
+    from app.esheet_process_widget.epw import EPWclass
+    from app.download_video_widget.dvw import DVWclass
 
     forms.start_init()
     forms.show()

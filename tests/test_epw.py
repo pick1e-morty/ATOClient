@@ -6,13 +6,13 @@ sys.path.append(str(ProjectPath.parent))
 
 import os
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView, QWidget)
-from app.esheet_process_widget.epw import EPW_Class
+from app.esheet_process_widget.epw import EPWclass
 
 if __name__ == "__main__":  # 用于当前窗体测试
     from app.utils.aboutconfig import configini
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
-    forms = EPW_Class(configini)  # 创建窗体
+    forms = EPWclass(configini)  # 创建窗体
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
     __filePath2 = os.path.join(__desktopPath, "1128.xlsx")

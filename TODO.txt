@@ -1,3 +1,2 @@
 1. addFilePathsToexcelFile_LWData作为IO密集型方法，可以开个线程池
-2. validtion     formsConfig.ini     configobj验证一下
-3. 月台配置也可以做一个模板
+2. 月台配置也可以做一个模板
