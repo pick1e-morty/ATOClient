@@ -18,9 +18,6 @@ class DVWclass(QWidget):
         self.ui = Ui_DVW_Widget()  # 创建UI对象
         self.ui.setupUi(self)  # 构造UI界面
 
-    # 首先我这边要拿到所有单号时间月台
-    # 然后按照月台(监控通道)分类，以监控通道为单位开始下载
-    # 这是一个很大的列表
     def addDownloadList(self, eflw_ItemDataList: List[ExcelFileListWidgetItemDataStruct]):
         # 处理上层数据
         classifyByYT = {}
