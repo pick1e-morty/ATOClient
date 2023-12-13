@@ -49,6 +49,7 @@ def getExcelDataTableWidgetData(filePath: str, shipid_CID: str = None, scantime_
     edtw_ItemDataList = []
 
     for index in range(len(shipIDList)):
+        errorTimes = 0  # 报错计数
         temp_ItemData = ExcelDataTableWidgetItemDataStruct()
         try:
             temp_ItemData.shipID = int(shipIDList[index]) if shipIDList[index] is not None else None
@@ -59,11 +60,16 @@ def getExcelDataTableWidgetData(filePath: str, shipid_CID: str = None, scantime_
             else:
                 edtw_ItemDataList.append(temp_ItemData)
         except IndexError as errorInfo:  # 某个单元格为空，但应该不会存在这个问题的，先抓了再说吧
+            errorTimes += 1
             logger.error(f"可能是某个单元格为空，原报错信息{errorInfo}")
             continue
         except ValueError as errorInfo:  # 一般是用户填错了列号
+            errorTimes += 1
             logger.error(f"应该是填错了数据列号或者时间格式不对，原报错信息{errorInfo}")
             continue
+        if errorTimes >= 100:       # 都错100次了，肯定传错啥了，别处理了
+            logger.error(f"错误次数达到100次,函数退出执行!")
+            break
     if not edtw_ItemDataList:  # 判断列表是否为空
         raise FileContentIsEmptyException(f"要处理的文件是空的，注意检查是否填错列号\n{filePath}")
     else:

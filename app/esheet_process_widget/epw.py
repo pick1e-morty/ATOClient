@@ -1,8 +1,9 @@
 import sys
 import os
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from PyQt5.QtCore import Qt, pyqtSlot, QEvent, QItemSelectionModel
+from PyQt5.QtCore import Qt, pyqtSlot, QEvent, QItemSelectionModel, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView
 from loguru import logger
 from typing import List
@@ -17,10 +18,14 @@ from openpyxl.utils.exceptions import InvalidFileException
 
 
 class EPWclass(Base_EPW_Widget):
+    showErrorMsgBox = pyqtSignal(str, str)  # 多线程函数里有个需要弹窗的步骤，需要用个信号显示
+
     def __init__(self, parent=None):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.setAcceptDrops(True)  # 开启拖拽
         self.init_ui()
+
+        self.showErrorMsgBox.connect(self.showMessageBox)  # 多线程函数里有个需要弹窗的步骤，需要用个信号来调槽函数显示
 
     def init_ui(self):
         self.connect_keepShipNum_SPB_Action()
@@ -161,27 +166,57 @@ class EPWclass(Base_EPW_Widget):
         """
         添加excel文件路径到excelFile_LW中，将excel文件中的数据处理后添加到组件item的data中
         """
+
+        repeatFileNameList = []
+        allowFilePathList = []
+
         excelFile_LW_RowCount = self.ui.excelFile_LW.count()
         for filePath in filePathList:
             fileName = os.path.basename(filePath)  # 获取文件名
             existexcelFile_LWItem = self.ui.excelFile_LW.findItems(fileName, Qt.MatchExactly)  # 查找预添加的文件名称是否已经存在
             if existexcelFile_LWItem:
-                # inaItemDatafileAddress = self.getInexcelFile_LWaddedAppointFileAdress(fileName)  # 找到这个同名文件地址
-                # loggerWaringText = "文件名重复,如要替换请先删除列表中的同名数据\n已存在于列表中的同名文件绝对地址为：\n" + str(inaItemDatafileAddress) + "\n当前重复文件名称的绝对文件地址为：\n" + str(filePath)
-                loggerWaringText = f"{fileName}文件名重复，请在修改文件名称后重新尝试添加"
-                InfoBar.warning(title='警告', content=loggerWaringText, orient=Qt.Horizontal, isClosable=True,
-                                position=InfoBarPosition.TOP_LEFT, duration=10000, parent=self)
-                logger.warning(loggerWaringText)
+                repeatFileNameList.append(fileName)
             else:
-                excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
-                if excelFile_LW_ItemData:
-                    aItem = QListWidgetItem(fileName)
-                    aItem.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
-                    aItem.setData(Qt.UserRole, excelFile_LW_ItemData)
-                    self.ui.excelFile_LW.addItem(aItem)
+                allowFilePathList.append(filePath)
+
+        # 多线程开始处理文件
+        self.thredPoolProcessingFiles(allowFilePathList)
+
+        #
+        for fileName in repeatFileNameList:
+            # inaItemDatafileAddress = self.getInexcelFile_LWaddedAppointFileAdress(fileName)  # 找到这个同名文件地址
+            # loggerWaringText = "文件名重复,如要替换请先删除列表中的同名数据\n已存在于列表中的同名文件绝对地址为：\n" + str(inaItemDatafileAddress) + "\n当前重复文件名称的绝对文件地址为：\n" + str(filePath)
+            loggerWaringText = f"{fileName}文件名重复，请在修改文件名称后重新尝试添加"
+            InfoBar.warning(title='警告', content=loggerWaringText, orient=Qt.Horizontal, isClosable=True,
+                            position=InfoBarPosition.TOP_LEFT, duration=10000, parent=self)
+            logger.warning(loggerWaringText)
+
         # 全部添加完毕后，判断是否新增项目。如果比处理文件之前的总数要多，就选中excelFile_LW最后一个项目
         if self.ui.excelFile_LW.count() > excelFile_LW_RowCount:
             self.ui.excelFile_LW.setCurrentRow(self.ui.excelFile_LW.count() - 1)
+            InfoBar.success(title='成功', content="处理完成", orient=Qt.Horizontal, isClosable=True,
+                            position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+
+    def thredPoolProcessingFiles(self, allowFilePathList):
+        def subFun(filePath):
+            inThreadExcelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
+            inThreadFileName = os.path.basename(filePath)  # 获取文件名
+            return inThreadFileName, inThreadExcelFile_LW_ItemData
+
+        with ThreadPoolExecutor() as executor:  # 3.8的max_workers 的默认值已改为 min(32, os.cpu_count() + 4)
+            futures = {executor.submit(subFun, filePath) for filePath in allowFilePathList}
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    fileName, excelFile_LW_ItemData = result
+                    if excelFile_LW_ItemData:
+                        aItem = QListWidgetItem(fileName)
+                        aItem.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+                        aItem.setData(Qt.UserRole, excelFile_LW_ItemData)
+                        self.ui.excelFile_LW.addItem(aItem)
+                        QApplication.processEvents()
+                except Exception as e:
+                    print(f"An error occurred while processing a file: {e}")
 
     def handleExcelFileData2ItemData(self, filePath: str) -> ExcelFileListWidgetItemDataStruct:
         # 获取excel文件的指定行列数据，并返回excelFile_LW_ItemDataStruct
@@ -198,15 +233,18 @@ class EPWclass(Base_EPW_Widget):
             sytctw_ItemDataList = getSameYTCountTableWidgetData(edtw_ItemDataList)  # 从上一步函数的返回值中获取相同月台表格组件中的数据
         except FileContentIsEmptyException:  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
             loggerErrorText = f"文件是空的，注意检查是否填错数据列号或选错文件\n{filePath}"
-            MessageBox('错误', loggerErrorText, self).exec_()
+            # MessageBox('错误', loggerErrorText, self).exec_()
+            self.showErrorMsgBox.emit("错误", loggerErrorText)
             logger.warning(loggerErrorText)
         except InvalidFileException:
             loggerErrorText = f"文件格式错误或文件路径有误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{filePath}"
-            MessageBox('错误', loggerErrorText, self).exec_()
+            # MessageBox('错误', loggerErrorText, self).exec_()
+            self.showErrorMsgBox.emit("错误", loggerErrorText)
             logger.warning(loggerErrorText)
         except FileNotFoundError:
             loggerErrorText = f"文件不存在，注意文件路径中不能含有空格\n{filePath}"
-            MessageBox('错误', loggerErrorText, self).exec_()
+            # MessageBox('错误', loggerErrorText, self).exec_()
+            self.showErrorMsgBox.emit("错误", loggerErrorText)
             logger.warning(loggerErrorText)
         else:
             excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 统一保存
@@ -214,6 +252,10 @@ class EPWclass(Base_EPW_Widget):
             excelFile_LW_ItemData.sytctw_ItemDataList = sytctw_ItemDataList
             excelFile_LW_ItemData.excelFilePath = filePath
             return excelFile_LW_ItemData
+
+    @pyqtSlot(str, str)
+    def showMessageBox(self, title, text):  # 多线程函数里有个需要弹窗的步骤，需要用个槽函数来显示
+        MessageBox(title, text, self).show()  # 主题作者不知道设置了什么，就算不用exec_也可以屏蔽用户对界面的操作，而不用阻塞事件循环，很棒!
 
     def getInexcelFile_LWaddedAppointFileAdress(self, fileName: str) -> str:
         # 获取在excelFile_LW组件中已经添加过的指定的文件地址
