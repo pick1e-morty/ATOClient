@@ -21,8 +21,9 @@ if __name__ == "__main__":  # 用于当前窗体测试
     __filePath5 = os.path.join(__desktopPath, "1209.xlsx")
     __filePath6 = os.path.join(__desktopPath, "1210.xlsx")
     # forms.addFilePathsToexcelFile_LWData([__filePath1])
-    forms.addFilePathsToexcelFile_LWData([__filePath1, __filePath2, __filePath3, __filePath4, __filePath5, __filePath6])
     forms.show()
+    QApplication.processEvents()
+    forms.addFilePathsToexcelFile_LWData([__filePath1, __filePath2, __filePath3, __filePath4, __filePath5, __filePath6])
 
     sys.exit(app.exec_())
 # viztracer --ignore_frozen --ignore_c_function --tracer_entries 2000000 tests\test_epw.py

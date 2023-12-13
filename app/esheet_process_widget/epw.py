@@ -1,12 +1,12 @@
 import sys
 import os
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 
 from PyQt5.QtCore import Qt, pyqtSlot, QEvent, QItemSelectionModel, pyqtSignal
-from PyQt5.QtWidgets import QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView
+from PyQt5.QtWidgets import QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView, QWidget
 from loguru import logger
-from typing import List
+from typing import List, Tuple
 from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
 from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, FileContentIsEmptyException, getSameYTCountTableWidgetData
 from app.esheet_process_widget.epw_define import SYTTWEnum, EDTWEnum, ExcelFileListWidgetItemDataStruct, SameYTCountTableWidgetItemDataStruct, ExcelDataTableWidgetItemDataStruct
@@ -18,14 +18,11 @@ from openpyxl.utils.exceptions import InvalidFileException
 
 
 class EPWclass(Base_EPW_Widget):
-    showErrorMsgBox = pyqtSignal(str, str)  # 多线程函数里有个需要弹窗的步骤，需要用个信号显示
 
     def __init__(self, parent=None):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.setAcceptDrops(True)  # 开启拖拽
         self.init_ui()
-
-        self.showErrorMsgBox.connect(self.showMessageBox)   # 多线程函数里有个需要弹窗的步骤，需要用个信号来调槽函数显示
 
     def init_ui(self):
         self.connect_keepShipNum_SPB_Action()
@@ -198,13 +195,18 @@ class EPWclass(Base_EPW_Widget):
                             position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
 
     def process_files(self, allowFilePathList):
-        def handle_file(filePath):
-            inThreadExcelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
-            inThreadFileName = os.path.basename(filePath)  # 获取文件名
-            return inThreadFileName, inThreadExcelFile_LW_ItemData
+        if self.ui.customFormat_SB.isChecked():
+            shipid_CID = self.ui.shipCID_LE.text()  # 单号数据列
+            scanTime_CID = self.ui.scanTimeCID_LE.text()  # 扫描时间列
+            yt_CID = self.ui.ytCID_LE.text()  # 月台号列
+            scanTimeFormat_CID = self.ui.scanTimeFormat_LE.text()  # 扫描时间的处理格式
+        else:
+            shipid_CID = scanTime_CID = yt_CID = scanTimeFormat_CID = None
 
-        with ThreadPoolExecutor() as executor:  # 3.8的max_workers 的默认值已改为 min(32, os.cpu_count() + 4)
-            futures = {executor.submit(handle_file, filePath) for filePath in allowFilePathList}
+        with ProcessPoolExecutor(3) as executor:
+            # TODO 我现在做的是子进程自己开一个msgBox，但失败了
+            # TODO 第二种方法是昂贵的进程通信Queue那一套，进程池暂时放弃了，速度算是稍微有点提升吧
+            futures = {executor.submit(self.handleExcelFileData2ItemData, filePath, shipid_CID, scanTime_CID, yt_CID, scanTimeFormat_CID) for filePath in allowFilePathList}
             for future in as_completed(futures):
                 try:
                     result = future.result()
@@ -218,44 +220,39 @@ class EPWclass(Base_EPW_Widget):
                 except Exception as e:
                     print(f"An error occurred while processing a file: {e}")
 
-    def handleExcelFileData2ItemData(self, filePath: str) -> ExcelFileListWidgetItemDataStruct:
+    @staticmethod
+    def handleExcelFileData2ItemData(filePath: str, shipid_CID, scanTime_CID, yt_CID, scanTimeFormat_CID) -> Tuple[str, ExcelFileListWidgetItemDataStruct]:
         # 获取excel文件的指定行列数据，并返回excelFile_LW_ItemDataStruct
         logger.info("本次处理的Excel文件地址为:" + filePath)
-        if self.ui.customFormat_SB.isChecked():
-            shipid_CID = self.ui.shipCID_LE.text()  # 单号数据列
-            scanTime_CID = self.ui.scanTimeCID_LE.text()  # 扫描时间列
-            yt_CID = self.ui.ytCID_LE.text()  # 月台号列
-            scanTimeFormat_CID = self.ui.scanTimeFormat_LE.text()  # 扫描时间的处理格式
-        else:
-            shipid_CID = scanTime_CID = yt_CID = scanTimeFormat_CID = None
+        # widget = QWidget()
         try:
             edtw_ItemDataList = getExcelDataTableWidgetData(filePath, shipid_CID, scanTime_CID, yt_CID, scanTimeFormat_CID)  # 用户没选自定义列号就用函数中缺省的列号
             sytctw_ItemDataList = getSameYTCountTableWidgetData(edtw_ItemDataList)  # 从上一步函数的返回值中获取相同月台表格组件中的数据
         except FileContentIsEmptyException:  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
             loggerErrorText = f"文件是空的，注意检查是否填错数据列号或选错文件\n{filePath}"
-            # MessageBox('错误', loggerErrorText, self).exec_()
-            self.showErrorMsgBox.emit("错误", loggerErrorText)
+            # MessageBox('错误', loggerErrorText, widget).show()
+            # self.showErrorMsgBox.emit("错误", loggerErrorText)
+
             logger.warning(loggerErrorText)
         except InvalidFileException:
             loggerErrorText = f"文件格式错误或文件路径有误，确保文件格式为xlsx或xls及文件路径中不能含有空格\n{filePath}"
             # MessageBox('错误', loggerErrorText, self).exec_()
-            self.showErrorMsgBox.emit("错误", loggerErrorText)
+            # MessageBox('错误', loggerErrorText, widget).show()
+            # self.showErrorMsgBox.emit("错误", loggerErrorText)
             logger.warning(loggerErrorText)
         except FileNotFoundError:
             loggerErrorText = f"文件不存在，注意文件路径中不能含有空格\n{filePath}"
             # MessageBox('错误', loggerErrorText, self).exec_()
-            self.showErrorMsgBox.emit("错误", loggerErrorText)
+            # MessageBox('错误', loggerErrorText, widget).show()
+            # self.showErrorMsgBox.emit("错误", loggerErrorText)
             logger.warning(loggerErrorText)
         else:
             excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 统一保存
             excelFile_LW_ItemData.edtw_ItemDataList = edtw_ItemDataList
             excelFile_LW_ItemData.sytctw_ItemDataList = sytctw_ItemDataList
             excelFile_LW_ItemData.excelFilePath = filePath
-            return excelFile_LW_ItemData
-
-    @pyqtSlot(str, str)
-    def showMessageBox(self, title, text):  # 多线程函数里有个需要弹窗的步骤，需要用个槽函数来显示
-        MessageBox(title, text, self).show()  # 主题作者不知道设置了什么，就算不用exec_也可以屏蔽用户对界面的操作，而不用阻塞事件循环，很棒!
+            inThreadFileName = os.path.basename(filePath)  # 获取文件名
+            return inThreadFileName, excelFile_LW_ItemData
 
     def getInexcelFile_LWaddedAppointFileAdress(self, fileName: str) -> str:
         # 获取在excelFile_LW组件中已经添加过的指定的文件地址
