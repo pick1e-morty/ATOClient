@@ -1,9 +1,21 @@
 .vscode
 .idea
 __pycache__
-月台配置.xlsx
 
+
+# 本地设备配置文件
 *.xlsx
+
+
+# 测试
+*.mp4
+*.jpg
+*.log
 
 # viztracer的结果文件
 result.json
+
+
+# pyinstaller
+dist
+build

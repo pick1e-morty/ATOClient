@@ -6,7 +6,7 @@ from app.esheet_process_widget.epw_define import ExcelDataTableWidgetItemDataStr
 from openpyxl import load_workbook
 from collections import Counter
 
-from app.utils.dev_config import devConfigGenerate
+from app.utils.dev_config import YtBindDevConfigGenerate
 from app.utils.tools import is_instance_variables_has_empty
 
 
@@ -67,7 +67,7 @@ def getExcelDataTableWidgetData(filePath: str, shipid_CID: str = None, scantime_
             errorTimes += 1
             logger.error(f"应该是填错了数据列号或者时间格式不对，原报错信息{errorInfo}")
             continue
-        if errorTimes >= 100:       # 都错100次了，肯定传错啥了，别处理了
+        if errorTimes >= 100:  # 都错100次了，肯定传错啥了，别处理了
             logger.error(f"错误次数达到100次,函数退出执行!")
             break
     if not edtw_ItemDataList:  # 判断列表是否为空
@@ -76,7 +76,7 @@ def getExcelDataTableWidgetData(filePath: str, shipid_CID: str = None, scantime_
         return edtw_ItemDataList
 
 
-def getSameYTCountTableWidgetData(edtw_ItemDataList: List[ExcelDataTableWidgetItemDataStruct]) -> List[SameYTCountTableWidgetItemDataStruct]:
+def getSameYTCountTableWidgetData(devConfigGenerate: YtBindDevConfigGenerate, edtw_ItemDataList: List[ExcelDataTableWidgetItemDataStruct]) -> List[SameYTCountTableWidgetItemDataStruct]:
     # 处理getExcelDataTableWidgetData返回的数据
     # 得到 相同月台的单号总量和月台通道配置
 

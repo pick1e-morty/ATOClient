@@ -95,7 +95,7 @@ class BaseMainWindow(FramelessWindow):
         self.resize(w // 2 + 200, h)
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
-        self.setQss()
+        # self.setQss()
 
     def addSubInterface(self, interface, icon, text: str, position=NavigationItemPosition.TOP, parent=None):
         """ add sub interface """

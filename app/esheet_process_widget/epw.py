@@ -230,7 +230,7 @@ class EPWclass(Base_EPW_Widget):
             shipid_CID = scanTime_CID = yt_CID = scanTimeFormat_CID = None
         try:
             edtw_ItemDataList = getExcelDataTableWidgetData(filePath, shipid_CID, scanTime_CID, yt_CID, scanTimeFormat_CID)  # 用户没选自定义列号就用函数中缺省的列号
-            sytctw_ItemDataList = getSameYTCountTableWidgetData(edtw_ItemDataList)  # 从上一步函数的返回值中获取相同月台表格组件中的数据
+            sytctw_ItemDataList = getSameYTCountTableWidgetData(self.devConfigGenerate, edtw_ItemDataList)  # 从上一步函数的返回值中获取相同月台表格组件中的数据
         except FileContentIsEmptyException:  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
             loggerErrorText = f"文件是空的，注意检查是否填错数据列号或选错文件\n{filePath}"
             # MessageBox('错误', loggerErrorText, self).exec_()
@@ -497,12 +497,29 @@ class EPWclass(Base_EPW_Widget):
 if __name__ == "__main__":  # 用于当前窗体测试
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
-    forms = EPWclass()  # 创建窗体
+
+    from PyQt5.QtWidgets import QWidget
+    from app.utils.forms_config import getFormsConfigDict, VdtStrNotUpperError, VdtDateTimeFormatError
+    from app.utils.dev_config import YtBindDevConfigGenerate, DevConfigFileNotFoundError, DevConfigFileInvalidError, DevConfigFileContentIsEmptyException, DevConfigFileContentIsInvalidException, DevConfigFileHandleErrorException
+
+    parentForTest = QWidget()
+    parentForTest.formsConfigDict = getFormsConfigDict()
+    parentForTest.devConfigGenerate = YtBindDevConfigGenerate()
+
+    try:
+        next(parentForTest.devConfigGenerate)
+    except DevConfigFileContentIsInvalidException as e:
+        print(e)
+
+    forms = EPWclass(parentForTest)  # 创建窗体
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
     __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
     # forms.addFilePathsToexcelFile_LWData([__filePath1])
-    forms.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
+    # forms.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
+
+    excelFile_LW_ItemData = forms.handleExcelFileData2ItemData(__filePath1)  # 通过内部方法直接得到ExcelFileListWidgetItemDataStruct
+    print(excelFile_LW_ItemData)
     forms.show()
 
     sys.exit(app.exec_())

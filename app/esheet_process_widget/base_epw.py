@@ -3,7 +3,7 @@ from PyQt5.QtCore import pyqtSlot, QEvent, Qt, QPropertyAnimation, QRect, QEasin
 from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QAction, QSizePolicy)
 from qfluentwidgets import RoundMenu, Action, MenuAnimationType, FlowLayout, SwitchButton
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_EPW_Widget
-from app.utils.forms_config import formsConfigDict
+
 
 class Base_EPW_Widget(QWidget):
     """
@@ -18,8 +18,9 @@ class Base_EPW_Widget(QWidget):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.ui = Ui_EPW_Widget()  # 创建UI对象
         self.ui.setupUi(self)  # 构造UI界面
-
+        formsConfigDict = parent.formsConfigDict
         self.epw_config = formsConfigDict["epw"]
+        self.devConfigGenerate = parent.devConfigGenerate
         self.initUI()
 
     def initUI(self):

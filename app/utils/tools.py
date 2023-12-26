@@ -6,3 +6,10 @@ def is_instance_variables_has_empty(instance):
             if attr_value is None or attr_value == "" or attr_value == "None":
                 return True
     return False
+
+
+def is_empty(var):
+    # 有时候也需要只判断一个变量是否为空值
+    if var is None or var == "" or var == "None":
+        return True
+    return False
