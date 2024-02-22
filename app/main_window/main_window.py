@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QRect, QUrl, QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QWidget
 from configobj.validate import VdtTypeError, VdtValueError, ValidateError
-from qfluentwidgets import SplashScreen, MessageBox
+from qfluentwidgets import SplashScreen, MessageBox,ProgressBar
 from qfluentwidgets import FluentIcon as FIF
 from app.main_window.base_main_window import BaseMainWindow
 from loguru import logger

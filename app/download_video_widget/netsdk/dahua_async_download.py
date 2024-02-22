@@ -1,16 +1,18 @@
+import multiprocessing
 import sys
 import threading
 from datetime import timedelta
 from pathlib import Path
 from time import sleep
 
-from UnifyNetSDK import DaHuaNetSDK, DHNetSDKException, DaHuaPlaySDK
+from UnifyNetSDK import DaHuaNetSDK, DHNetSDKException
 from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg, UnifyFindFileByTimeArg
-from _testLoginConfig import testUserConfig
 
 from loguru import logger
+from typing import List
 
 from app.download_video_widget.utils.video2pic import tsPic
+from dist.main_window._internal.app.download_video_widget.dvw_define import DevLoginAndDownloadArgSturct
 
 logger.remove()
 logger.add(sys.stdout, level="TRACE")
@@ -40,7 +42,7 @@ class StopDownloadConsumer(threading.Thread):
                     break
                 with self.condition:  # 注意，我用了两个with condition，由于查询是个非常耗时的操作，查询的期间是不影响生产者继续添加句柄的。
                     self.condition.wait()  # 如果下载句柄列表为空，但生产者没有发出完毕信号，则线程阻塞等待。
-            for downloadHandle in list(self.downloadHandleDict.keys()):     # 迭代字典的时候不允许更改字典（下面进行了一个pop操作），所以做了个keys的副本
+            for downloadHandle in list(self.downloadHandleDict.keys()):  # 迭代字典的时候不允许更改字典（下面进行了一个pop操作），所以做了个keys的副本
                 stopRestlt = dahuaClient.stopDownLoadTimer(downloadHandle)
                 if stopRestlt is True:
                     tsPic(absVideoPath=self.downloadHandleDict[downloadHandle])
@@ -56,8 +58,17 @@ class StopDownloadConsumer(threading.Thread):
 # 比如main主函的Exception的抓取
 # 比如stop子线程的重构，未来肯定是要做的，所以需要两个文件
 # play_ctrl可以省
+# 子线程返回单号，主进程那边可以做对比，取行，填充。
 
-def main():
+# 首先需求是
+# 子进程发送下载完成的信息
+# 主进程发送停止下载的信号
+
+
+# TODO 下载句柄拿不到就可以直接发到队列里一次
+# 然后队列也需要传送给StopDownloadConsumer，以供下载进度变化后发送信息
+
+def dahuaDownloader(resultQueue: multiprocessing.Queue, downloadArgs: DevLoginAndDownloadArgSturct):
     global dahuaClient
     dahuaClient = DaHuaNetSDK()
     dahuaClient.init()
@@ -66,10 +77,10 @@ def main():
     dahuaClient.logopen(str(absLogPath))
 
     easy_login_info = UnifyLoginArg()
-    easy_login_info.userName = testUserConfig.devUserName
-    easy_login_info.userPassword = testUserConfig.devPassword
-    easy_login_info.devicePort = testUserConfig.devPort
-    easy_login_info.deviceAddress = testUserConfig.devIP
+    easy_login_info.userName = downloadArgs.devUserName
+    easy_login_info.userPassword = downloadArgs.devPassword
+    easy_login_info.devicePort = downloadArgs.devPort
+    easy_login_info.deviceAddress = downloadArgs.devIP
 
     userID, device_info = dahuaClient.login(easy_login_info)
     print("硬盘数量", device_info.stuDeviceInfo.nDiskNum)
@@ -79,7 +90,7 @@ def main():
     stopDownInstance = StopDownloadConsumer(dahuaCondition, downloadHandleDict)
     stopDownInstance.start()
 
-    for channel, downloadArgList in testUserConfig.downloadArgDict.items():
+    for channel, downloadArgList in downloadArgs.downloadArgDict.items():
         for downloadArg in downloadArgList:
             findArg = UnifyFindFileByTimeArg()
             findArg.channel = channel
