@@ -158,7 +158,7 @@ def YtBindDevConfigGenerate():
     # 这是一个生成器，用于获取月台绑定的设备配置信息
     # 上层用send发送月台索引到这，查到之后把配置yield出去
     ytBindConfigDict = getYtConfigFromConfigFile()  # 读取设备配置表
+    ytName = yield  # 接收第一个 ytName
     while True:
-        ytName = yield
-        ytConfig = ytBindConfigDict.get(ytName, None)
-        yield ytConfig
+        ytConfig = ytBindConfigDict.get(ytName, None)  # 查找 ytName 对应的 ytConfig
+        ytName = yield ytConfig  # 返回 ytConfig，并接收下一个 ytName
