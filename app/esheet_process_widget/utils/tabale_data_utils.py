@@ -93,7 +93,6 @@ def getSameYTCountTableWidgetData(devConfigGenerate: YtBindDevConfigGenerate, ed
         temp_ItemDataList.shipCount = shipCount
         devconfig = devConfigGenerate.send(yt)  # 向生成器发送月台名称,生成器会返回设备配置
         temp_ItemDataList.devChannel = f"{devconfig.devIP}-{str(devconfig.devChannel)}" if devconfig else "未配置"
-        next(devConfigGenerate)  # 驱动生成器执行到ytName = yield，以便接收下一个月台名称
         sytctw_ItemDataList.append(temp_ItemDataList)
     return sytctw_ItemDataList
 

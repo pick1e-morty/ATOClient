@@ -14,22 +14,23 @@ class Base_EPW_Widget(QWidget):
     4. 开始屏幕的加载启动（关闭方法则是两边的文件入口都有）
     """
 
+    # TODO 自定义处理格口的整体组件在合并收缩后与上方组件的间距异常，需要修一下
     def __init__(self, parent=None):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.ui = Ui_EPW_Widget()  # 创建UI对象
         self.ui.setupUi(self)  # 构造UI界面
-        formsConfigDict = parent.formsConfigDict
+        formsConfigDict = parent.formsConfigDict  # 窗体配置由父窗体传入，毕竟那边要读取文件还要做exception处理。
         self.epw_config = formsConfigDict["epw"]
-        self.devConfigGenerate = parent.devConfigGenerate
+        self.devConfigGenerate = parent.devConfigGenerate  # 设备配置生成器同理
         self.initUI()
 
     def initUI(self):
         self.initKeepShipNum_SPB()
         self.initCustomFormat_CW()
-        # self.initFlowLayout()
+        # self.initFlowLayout()     # 失败了，没开。
         # 仅仅是美化的修改
         self.moveSwitchButtonIndicator2Right(self.ui.customFormat_SB)
-        # self.moveSwitchButtonIndicator2Right(self.ui.autoDeleteUnConfiguredYT_SB)
+        # self.moveSwitchButtonIndicator2Right(self.ui.autoDeleteUnConfiguredYT_SB) # 自动删除未配置月台的switch状态要放到setting页面里
 
         # 三个组件的右键菜单
         self.ui.excelFile_LW.installEventFilter(self)
@@ -48,11 +49,12 @@ class Base_EPW_Widget(QWidget):
         switchButtonLabel = switchButton.label
         switchButtonIndicator = switchButton.indicator
         switchButton.hBox.removeWidget(switchButtonLabel)
-        switchButton.hBox.removeWidget(switchButtonIndicator)
+        switchButton.hBox.removeWidget(switchButtonIndicator)  # TODO 这里可以单独开个小测试文件，应该不用做两次removeWidget操作的
         switchButton.hBox.addWidget(switchButtonLabel, 0, Qt.AlignRight)
         switchButton.hBox.addWidget(switchButtonIndicator, 0, Qt.AlignRight)
 
     def initFlowLayout(self):
+        # 两个tableWidget组件下的按钮组件，使用FlowLayout布局
         # 失败了，没开
         self.flowLayout = FlowLayout(self, needAni=True)
 
@@ -83,8 +85,8 @@ class Base_EPW_Widget(QWidget):
         self.ui.scanTimeFormat_LE.setText(self.epw_config["自定义格式"]["扫描时间格式"])
 
         self.ui.shipCID_LE.setVisible(False)
-        self.ui.shipCID_BL.setVisible(False)
-        self.ui.ytCID_LE.setVisible(False)
+        self.ui.shipCID_BL.setVisible(False)  # TODO 从这段代码就能看出，这些个组件应该用groupBox包裹起来
+        self.ui.ytCID_LE.setVisible(False)  # 只有groupBox负责显示隐藏，可以独立做个组件
         self.ui.ytCID_BL.setVisible(False)
         self.ui.scanTimeCID_LE.setVisible(False)
         self.ui.scanTimeCID_BL.setVisible(False)
@@ -157,9 +159,6 @@ class Base_EPW_Widget(QWidget):
 
     def init_sameYTCount_TW_Menu(self):
         # 初始化相同月台总量表格组件的右键菜单
-        self.sameYTCount_TW_Menu = RoundMenu(parent=self)
-        self.sameYTCount_TW_Menu.addMenu(self.ui.keepShipNum_SPB.flyout)
-        self.sameYTCount_TW_Menu.addSeparator()
         action_deleteUnConfiguredYT = Action("删除未配置月台")
         action_deleteUnConfiguredYT.triggered.connect(lambda: self.ui.deleteUnConfiguredYT_PB.click())
         action_selectAllYT = Action("全选月台")
@@ -168,6 +167,10 @@ class Base_EPW_Widget(QWidget):
         action_reverseSelectionYT.triggered.connect(lambda: self.ui.reverseSelectionYT_PB.click())
         action_deleteSelectionYT = Action("删除选中月台")
         action_deleteSelectionYT.triggered.connect(lambda: self.ui.deleteSelectionYT_PB.click())
+
+        self.sameYTCount_TW_Menu = RoundMenu(parent=self)
+        self.sameYTCount_TW_Menu.addMenu(self.ui.keepShipNum_SPB.flyout)
+        self.sameYTCount_TW_Menu.addSeparator()
         self.sameYTCount_TW_Menu.addAction(action_deleteUnConfiguredYT)
         self.sameYTCount_TW_Menu.addAction(action_selectAllYT)
         self.sameYTCount_TW_Menu.addAction(action_reverseSelectionYT)

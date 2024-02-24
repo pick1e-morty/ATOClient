@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import sys
 from pathlib import Path
@@ -6,7 +7,7 @@ from PyQt5.QtCore import Qt, QRect, QUrl, QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QWidget
 from configobj.validate import VdtTypeError, VdtValueError, ValidateError
-from qfluentwidgets import SplashScreen, MessageBox,ProgressBar
+from qfluentwidgets import SplashScreen, MessageBox, ProgressBar
 from qfluentwidgets import FluentIcon as FIF
 from app.main_window.base_main_window import BaseMainWindow
 from loguru import logger
@@ -53,6 +54,7 @@ class MainWindow(BaseMainWindow):
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
@@ -107,9 +109,9 @@ if __name__ == '__main__':
     forms.stackWidget.setCurrentIndex(1)
 
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
-    __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
     __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
-    # forms.addFilePathsToexcelFile_LWData([__filePath1])
-    forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
+    testFile = os.path.join(__desktopPath, "test.xlsx")
+    # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
+    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile])
 
     app.exec_()

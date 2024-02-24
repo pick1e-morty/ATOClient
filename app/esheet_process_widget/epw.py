@@ -197,7 +197,7 @@ class EPWclass(Base_EPW_Widget):
             InfoBar.success(title='成功', content="处理完成", orient=Qt.Horizontal, isClosable=True,
                             position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
 
-    def thredPoolProcessingFiles(self, allowFilePathList):
+    def thredPoolProcessingFiles(self, allowFilePathList):  # TODO 不知道哪里出的问题，这个线程貌似还不如不用的快
         def subFun(filePath):
             inThreadExcelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
             inThreadFileName = os.path.basename(filePath)  # 获取文件名
@@ -257,7 +257,7 @@ class EPWclass(Base_EPW_Widget):
     def showMessageBox(self, title, text):  # 多线程函数里有个需要弹窗的步骤，需要用个槽函数来显示
         MessageBox(title, text, self).show()  # 主题作者不知道设置了什么，就算不用exec_也可以屏蔽用户对界面的操作，而不用阻塞事件循环，很棒!
 
-    def getInexcelFile_LWaddedAppointFileAdress(self, fileName: str) -> str:
+    def getInexcelFile_LWaddedAppointFileAdress(self, fileName: str) -> str:    # 没用上
         # 获取在excelFile_LW组件中已经添加过的指定的文件地址
         FindedItem = self.ui.excelFile_LW.findItems(fileName, Qt.MatchExactly)
         excelFile_LW_ItemData = FindedItem[0].data(Qt.UserRole)
@@ -495,6 +495,8 @@ class EPWclass(Base_EPW_Widget):
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
+
+    # 下面这些代码已经过期了
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
 

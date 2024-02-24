@@ -19,3 +19,4 @@ result.json
 # pyinstaller
 dist
 build
+/qodana.yaml
