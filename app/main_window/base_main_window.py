@@ -1,12 +1,14 @@
 # coding:utf-8
 import os
 import sys
-from PyQt5.QtCore import Qt, QRect, QUrl
+from pathlib import Path
+
+from PyQt5.QtCore import Qt, QRect, QUrl, pyqtSignal, QSize
 from PyQt5.QtGui import QIcon, QPainter, QImage, QBrush, QColor, QFont, QDesktopServices
-from PyQt5.QtWidgets import QApplication, QFrame, QStackedWidget, QHBoxLayout, QLabel, QMainWindow
+from PyQt5.QtWidgets import QApplication, QFrame, QStackedWidget, QHBoxLayout, QLabel, QMainWindow, QWidget
 
 from qfluentwidgets import (NavigationInterface, NavigationItemPosition, NavigationWidget, MessageBox,
-                            isDarkTheme, setTheme, Theme, setThemeColor, qrouter, FluentWindow, NavigationAvatarWidget)
+                            isDarkTheme, setTheme, Theme, setThemeColor, qrouter, FluentWindow, NavigationAvatarWidget, PushButton, SplashScreen)
 from qfluentwidgets import FluentIcon as FIF
 from qframelesswindow import FramelessWindow, StandardTitleBar
 
@@ -23,6 +25,7 @@ class Widget(QFrame):
 
 
 class BaseMainWindow(FramelessWindow):
+    switchToWidget = pyqtSignal(QWidget)        # 用于发送navigationInterface所点击的组件，没用stackWidget.currentChanged，就是为了点一次发一次，槽函数那边要实现刷新之类的操作
 
     def __init__(self):
         super().__init__()
@@ -66,7 +69,7 @@ class BaseMainWindow(FramelessWindow):
         self.navigationInterface.addWidget(
             routeKey='avatar',
             widget=NavigationAvatarWidget('OffLine', 'resource/Robot_black.png'),
-            onClick=self.showMessageBox,
+            onClick=None,
             position=NavigationItemPosition.BOTTOM,
         )
 
@@ -117,6 +120,7 @@ class BaseMainWindow(FramelessWindow):
 
     def switchTo(self, widget):
         self.stackWidget.setCurrentWidget(widget)
+        self.switchToWidget.emit(widget)
 
     def onCurrentInterfaceChanged(self, index):
         widget = self.stackWidget.widget(index)
@@ -128,10 +132,23 @@ class BaseMainWindow(FramelessWindow):
         # epw的保存机制是：当excelFile_LW中的item改变时，将excelData_TW和sameYt_TW中的数据保存到excelFile_LW中的item中
         # 如果用户删除过表格组件中的数据后，却没有ItemChanged，那main_window这边取数据的时候就会丢失最新操作的那一部分数据
         # 所以需要我这边手动保存一下
+
+        # TODO 这里做一个检测是否 修改的标志，如果没改的话还要来回存放就浪费资源了(还可能会卡顿)
         excelFile_LW_CurrentItem = self.epwInterface.ui.excelFile_LW.currentItem()
         if excelFile_LW_CurrentItem is not None:
             excelFile_LW_ItemData = self.epwInterface.getExcelFile_LW_ItemData()
             excelFile_LW_CurrentItem.setData(Qt.UserRole, excelFile_LW_ItemData)
+
+    def loadSplashScreen(self):
+        # 加载启动屏幕
+        logoFilePath = Path(__file__).parent / "resource/logo.png"
+        self.setWindowIcon(QIcon(str(logoFilePath)))
+        self.splashScreen = SplashScreen(self.windowIcon(), self)
+        formsWidth = self.size().width()
+        formsHeigth = self.size().height()
+        self.splashScreen.setIconSize(QSize(formsWidth // 2, formsHeigth // 2))
+        self.show()
+        QApplication.processEvents()
 
     def showMessageBox(self):
         w = MessageBox('正在开发', '', self)

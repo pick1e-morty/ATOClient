@@ -156,6 +156,9 @@ class DVWclass(QWidget):
         """
         负责开启进程池的线程，最大进程数量要做参数化的(UI那边要限制最多是cpu_count个)
         """
+        # TODO 如果len(self.classifyDownloadArgsByDevIP.items()) > 8 就开8个，不然就开items的个数，大部分情况是可以少开几个进程的
+
+        # TODO 还有那个bUI怎么这样的啊？什么问题，缩放显示不正常
         with ProcessPoolExecutor(max_workers=4) as executor:
             for devIP, devArgStruct in self.classifyDownloadArgsByDevIP.items():
                 if devArgStruct.devType == "dahua":
@@ -164,9 +167,6 @@ class DVWclass(QWidget):
                     executor.submit(haikangDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
                 else:
                     logger.error(f"未知设备类型{devArgStruct.devType}")
-                logger.success(str(devIP))
-
-        # 完犊子，这个submit好像是同步的啊
 
         with self.downloadResultListCondition:  # 如果没有一个下载结果传过去的话，就需要手动解锁一下，让子线程顺利关闭
             self.downloadResultListCondition.notify()
@@ -205,6 +205,7 @@ class DVWclass(QWidget):
         row = 0
         downloadArgsCount = 0  # 所有ip加一块的下载总量
         self.ipRowIndexIndownloadProgress_TW = {}  # 这个变量是用来存储ip所在行的索引的，用来更新进度条的
+        self.ui.downloadProgress_TW.setRowCount(len(self.classifyDownloadArgsByDevIP.keys()))
         for devIP, devArgStruct in self.classifyDownloadArgsByDevIP.items():
             inIp_count = len(devArgStruct.downloadArgList)  # 每个ip单独的下载数量
             downloadArgsCount += inIp_count

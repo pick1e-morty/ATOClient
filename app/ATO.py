@@ -12,51 +12,8 @@ from qfluentwidgets import FluentIcon as FIF
 from app.main_window.base_main_window import BaseMainWindow
 from loguru import logger
 
+from app.main_window.main_window import MainWindow
 from app.picture_process_widget.ppw import PPWclass
-
-
-class MainWindow(BaseMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.loadSplashScreen()
-
-    def start_init(self):
-        self.epwInterface = EPWclass(self)
-        self.addSubInterface(self.epwInterface, FIF.DOCUMENT, '处理表格')
-        self.dvwInterface = DVWclass(self)
-        self.addSubInterface(self.dvwInterface, FIF.DOWNLOAD, '下载录像')
-        self.ppwInterface = PPWclass(self)
-        self.ppwInterface.addToolButtonInTitleBar(self.titleBar)
-        self.addSubInterface(self.ppwInterface, FIF.PHOTO, '修改图片')
-
-        self.connectWidgetSignal()
-
-    def connectWidgetSignal(self):
-        # 连接组件信号
-        self.dvwInterface.ui.startDownLoad_PB.clicked.connect(self.dvw_startDownLoad_PB_clicked)
-        self.switchToWidget.connect(self.initSomeWidget)  #
-
-    def initSomeWidget(self, widget):
-        # 如果navigationInterface上的某个按钮被点击
-        if widget == self.ppwInterface:
-            # 把toolsGroupBox显示出来
-            pass
-            # 跑一下path.walk在
-        else:
-            # 隐藏toolsGroupBox
-            pass
-
-    def dvw_startDownLoad_PB_clicked(self):
-        # 当 下载页面 中的 开始下载按钮 被点击时，触发这个函数
-        # 两个组件之间的数值传递，
-        # 遍历excelFile_LW中的所有item，取出每个item的数据
-        excelFileListWidgetItemDataStructList = []
-        for i in range(self.epwInterface.ui.excelFile_LW.count()):
-            # TODO 这里还没做判空呢
-            excelFile_LW_ItemData = self.epwInterface.ui.excelFile_LW.item(i).data(Qt.UserRole)
-            excelFileListWidgetItemDataStructList.append(excelFile_LW_ItemData)
-        self.dvwInterface.addDownloadList(excelFileListWidgetItemDataStructList)
-
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
@@ -105,19 +62,18 @@ if __name__ == '__main__':
         errorMsgBox.exec()
         exit(1)
     # 获取界面配置字典 代码结束
-    from app.esheet_process_widget.epw import EPWclass  # 这两个类用到了上面的 设备配置生成器 和 界面配置字典
-    from app.download_video_widget.dvw import DVWclass  # 所以要在上面try完了之后才能导入
-
+    from esheet_process_widget.epw import EPWclass  # 这两个类用到了上面的 设备配置生成器 和 界面配置字典
+    from download_video_widget.dvw import DVWclass  # 所以要在上面try完了之后才能导入
     forms.start_init()
     forms.show()
     forms.splashScreen.finish()
-    # TODO 测试参数，记得改回第一个页面， 参数1,3
-    forms.stackWidget.setCurrentIndex(1)
+    # TODO 测试参数，记得改回第一个页面， 参数1
+    forms.stackWidget.setCurrentIndex(3)
 
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     testFile = os.path.join(__desktopPath, "0306.xlsx")
     __filePath2 = os.path.join(__desktopPath, "0307.xlsx")
     # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
-    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
+    # forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
 
     app.exec_()
