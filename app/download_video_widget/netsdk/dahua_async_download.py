@@ -6,8 +6,7 @@ from pathlib import Path
 from time import sleep
 
 from UnifyNetSDK import DaHuaNetSDK
-# , DHNetSDKException   # TODO 这个还有待测试
-from UnifyNetSDK.dahua.dh_netsdk_exception import DHNetSDKException
+from UnifyNetSDK.dahua.dh_netsdk_exception import DHNetSDKException  # TODO 这个地方的导入应该是有办法统一一下的
 from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg, UnifyFindFileByTimeArg
 
 from loguru import logger
@@ -80,10 +79,6 @@ class StopDownloadHandleThread(threading.Thread):
             sleep(0.5)
 
 
-
-# TODO 还是sdk的类型不正确，那个句柄的数值绝对不能再出现负数，修不好就用进行下一步了
-#
-
 def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgSturct):
     # 参数还要加，是否查找录像，日志保存地址，
 
@@ -115,22 +110,23 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
             exit(1)
 
     global dahuaClient  # sdkClient的全局变量是避免不掉的
+
+    easy_login_info = UnifyLoginArg()  # 初始化登陆参数
+    easy_login_info.userName = devArgs.devUserName
+    easy_login_info.userPassword = devArgs.devPassword
+    easy_login_info.devicePort = devArgs.devPort
+    easy_login_info.deviceAddress = deviceAddress = devArgs.devIP  # 先做取deviceAddress，因为下面的init也要以设备ip地址做报错根源参照
+
     dahuaClient = DaHuaNetSDK()
     execute_operation(dahuaClient.init, [], "初始化成功", "初始化失败")
     absLogPath = Path(__file__).absolute().parent
     absLogPath = absLogPath.joinpath("dh_netsdk_log/netsdk1.log")  # TODO 打包阶段时要将log统一对齐到rootPath/log文件夹下
     execute_operation(dahuaClient.logopen, [str(absLogPath)], "打开日志成功", "打开日志失败")
 
-    easy_login_info = UnifyLoginArg()  # 初始化登陆参数
-    easy_login_info.userName = devArgs.devUserName
-    easy_login_info.userPassword = devArgs.devPassword
-    easy_login_info.devicePort = devArgs.devPort
-    easy_login_info.deviceAddress = deviceAddress = devArgs.devIP
-
     userID, device_info = execute_operation(dahuaClient.login, [easy_login_info], "登录成功", "登录失败")
-    if userID == 0:
-        logger.error("登录失败")
-        exit(1)
+    # if userID == 0:
+    #     logger.error("登录失败")
+    #     exit(1)
     print("硬盘数量", device_info.stuDeviceInfo.nDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
 
     downloadHandleDict = {}  # key是下载句柄，value是downloadArg.savePath，下载地址。iNDEX,下载参数在列表中的索引
@@ -138,6 +134,10 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     stopDownloadThreadInstance = StopDownloadHandleThread(downloadHandleDict, downloadHandleDictCondition, updateDownloadStatusFun)
     stopDownloadThreadInstance.setName(str(devArgs.devIP))  # 给线程加个名字(以IP为单位)，查错的时候方便点
     stopDownloadThreadInstance.start()
+    # logger.error("下载主进程休眠5秒")
+    # sleep(5)  # TODD  休眠5秒，然后才能正常的进行录像查找，从第一个查找失败到第四个查找成功，最短时间是5秒，我不清楚原因
+    # 如果直接运行这个文件main函数，就不用做这个sleep，所以问题应该是出来了进程池上
+    # sdk第一方的log提示 用json格式的参数进行查找录像失败
     for iNDEX, downloadArg in enumerate(devArgs.downloadArgList):
         findArg = UnifyFindFileByTimeArg()  # 遍历下载参数，先查录像是否存在，然后再下载
         findArg.channel = downloadArg.channel

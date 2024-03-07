@@ -109,9 +109,9 @@ if __name__ == '__main__':
     forms.stackWidget.setCurrentIndex(1)
 
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
-    __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
-    testFile = os.path.join(__desktopPath, "test.xlsx")
+    testFile = os.path.join(__desktopPath, "0306.xlsx")
+    __filePath2 = os.path.join(__desktopPath, "0307.xlsx")
     # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
-    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile])
+    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
 
     app.exec_()

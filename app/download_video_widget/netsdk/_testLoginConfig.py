@@ -17,6 +17,8 @@ def randomTime():
 
 
 testUserConfig = DevLoginAndDownloadArgSturct()
+
+
 testUserConfig.devType = "dahua"
 testUserConfig.devIP = "10.30.15.216"
 testUserConfig.devPort = 30216

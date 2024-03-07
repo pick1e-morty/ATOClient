@@ -15,7 +15,7 @@ from loguru import logger
 logger.remove()
 logger.add(sys.stdout, level="TRACE")
 
-dahuaClient = None
+haikangClient = None
 
 
 # 如果不想用全局变量这种写法就需要
@@ -41,7 +41,7 @@ class StopDownloadConsumer(threading.Thread):
                 with self.condition:  # 注意，我用了两个with condition，由于查询是个非常耗时的操作，查询的期间是不影响生产者继续添加句柄的。
                     self.condition.wait()  # 如果下载句柄列表为空，但生产者没有发出完毕信号，则线程阻塞等待。
             for downloadHandle in self.downloadHandleList:
-                stopRestlt = dahuaClient.stopDownLoadTimer(downloadHandle)
+                stopRestlt = haikangClient.stopDownLoadTimer(downloadHandle)
                 if stopRestlt is True:
                     with self.condition:  # 下载成功后就可以删掉这个句柄了
                         self.downloadHandleList.pop(self.downloadHandleList.index(downloadHandle))
@@ -53,7 +53,7 @@ class StopDownloadConsumer(threading.Thread):
 
 def main():
     # 从这里开一个FileWatchDog就可以了
-    global dahuaClient
+    global haikangClient
     dahuaClient = DaHuaNetSDK()
     dahuaClient.init()
     absLogPath = Path(__file__).absolute().parent

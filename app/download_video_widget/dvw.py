@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QTableWidgetItem)
 from typing import List
 
 from app.download_video_widget.UI.ui_DownloadVideo import Ui_DVW_Widget
+from app.download_video_widget.netsdk.haikang_async_download import haikangDownloader
 from app.download_video_widget.utils.progress_bar import PercentProgressBar
 from app.download_video_widget.netsdk.dahua_async_download import dahuaDownloader
 from app.esheet_process_widget.epw_define import ExcelFileListWidgetItemDataStruct
@@ -38,7 +39,7 @@ class DVWclass(QWidget):
         self.classifyDownloadArgsByDevIP = None  # 把下载参数按照ip分类，因为最终下载时是以ip为单位的
         self.manager: multiprocessing.Manager = None  # 进程通信对象管理器
         self.downloadResultList: ListProxy = None  # 从manager拿的进程通信列表对象，它的方法定义在multiprocess.managers.BaseListProxy
-        self.updateDownloadStatusCondition: ConditionProxy = None  # 负责downloadResultList的进程安全同步和非空任务事件通知
+        self.downloadResultListCondition: ConditionProxy = None  # 负责downloadResultList的进程安全同步和非空任务事件通知
         self.getDownloadResultThreadInstance = None  # getDownloadResultThread是从downloadResultList中不断拿结果并发信号的线程
         self.downloadDone: bool = None  # 一个关闭标志，用来关getDownloadResultThread的
         self.downloadStatusChange.connect(self.updateDownloadStatusUI)  # 这个信号也是getDownloadResultThread发出来的
@@ -89,12 +90,12 @@ class DVWclass(QWidget):
         """
 
         while True:
-            with self.updateDownloadStatusCondition:  # 查和改的操作都要在锁下进行。如果某个对列表的操作不在锁下，就不能保证是进程安全的了，python随时有可能把权限交出去
+            with self.downloadResultListCondition:  # 查和改的操作都要在锁下进行。如果某个对列表的操作不在锁下，就不能保证是进程安全的了，python随时有可能把权限交出去
                 if not self.downloadResultList:
                     if self.downloadDone is True:
                         logger.info("getDownloadResultThread子线程正常关闭")
                         break
-                    self.updateDownloadStatusCondition.wait()
+                    self.downloadResultListCondition.wait()
                 result_List = self.downloadResultList[:]
                 self.downloadResultList[:] = []  # ListProxy没有提供clear方法。它的方法定义在multiprocess.managers.BaseListProxy
             for resultStruct in result_List:  # 这一步是极有可能存在速度瓶颈的，应该创一个独立缓冲区来保存下载结果，然后慢慢地让窗体更新数据。毕竟生产者(进程池)有8个，而消费者(窗体更新UI)只有一个。
@@ -158,20 +159,24 @@ class DVWclass(QWidget):
         with ProcessPoolExecutor(max_workers=4) as executor:
             for devIP, devArgStruct in self.classifyDownloadArgsByDevIP.items():
                 if devArgStruct.devType == "dahua":
-                    executor.submit(dahuaDownloader, self.downloadResultList, self.updateDownloadStatusCondition, devArgStruct)
+                    executor.submit(dahuaDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
                 elif devArgStruct.devType == "haikang":
-                    pass
+                    executor.submit(haikangDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
                 else:
                     logger.error(f"未知设备类型{devArgStruct.devType}")
+                logger.success(str(devIP))
 
-        with self.updateDownloadStatusCondition:  # 如果没有一个下载结果传过去的话，就需要手动解锁一下，让子线程顺利关闭
-            self.updateDownloadStatusCondition.notify()
+        # 完犊子，这个submit好像是同步的啊
+
+        with self.downloadResultListCondition:  # 如果没有一个下载结果传过去的话，就需要手动解锁一下，让子线程顺利关闭
+            self.downloadResultListCondition.notify()
         self.downloadDone = True  # 开启关闭标志，getDownloadResultThreadInstance线程可以关了
         self.getDownloadResultThreadInstance.join(10)  # 没关的话再等10秒
         if self.getDownloadResultThreadInstance.is_alive():
             logger.error("getDownloadResultThread子线程关闭超时")
 
         self.manager.shutdown()  # 上面关完了，管理器也需要关
+        logger.info("multiprocessing.Manager已关闭")
 
     def startDownload(self):
         """
@@ -182,7 +187,8 @@ class DVWclass(QWidget):
         """
         self.manager = multiprocessing.Manager()
         self.downloadResultList = self.manager.list()
-        self.updateDownloadStatusCondition = self.manager.Condition()
+        self.downloadResultListCondition = self.manager.Condition()
+        self.downloadDone = False  # 初始化线程关闭标志
         self.getDownloadResultThreadInstance = threading.Thread(target=self.getDownloadResultThread)  #
         self.getDownloadResultThreadInstance.start()
         self.startDownloadThreadInstance = threading.Thread(target=self.startDownloadThread)  #
@@ -193,7 +199,9 @@ class DVWclass(QWidget):
         self.classifyArg(eflw_ItemDataList)
         # 分类之后填充几个组件     显示下载总量
         self.ui.downloadProgress_TW.clearContents()
+        self.ui.downloadProgress_TW.setRowCount(0)
         self.ui.downloadStatus_TW.clearContents()
+        self.ui.downloadStatus_TW.setRowCount(0)
         row = 0
         downloadArgsCount = 0  # 所有ip加一块的下载总量
         self.ipRowIndexIndownloadProgress_TW = {}  # 这个变量是用来存储ip所在行的索引的，用来更新进度条的
