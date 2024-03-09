@@ -2,14 +2,14 @@
 
 
 a = Analysis(
-    ['app\\main_window\\main_window.py'],
+    ['app\\ATO.py'],
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=["app.utils.dev_config","app.utils.forms_config"],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=['hook.py'],
     excludes=[],
     noarchive=False,
 )
@@ -20,7 +20,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='main_window',
+    name='ATO',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -39,5 +39,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='main_window',
+    name='ATO',
 )
