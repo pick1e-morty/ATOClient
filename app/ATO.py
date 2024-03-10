@@ -2,16 +2,12 @@ import os
 import sys
 import multiprocessing
 from pathlib import Path
-sys.path.append(str(Path(__file__).absolute().parent.parent))
+
+sys.path.append(str(Path(__file__).absolute().parent.parent))  # 在vscode里不会自动追加项目根目录为pythonpath
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 from app.main_window.main_window import MainWindow
-
-# 下载录像
-# 海康第一个总是查半天的，哦，把find关了就好了(开玩笑的哈)
-# 大华是错误，network_error
-
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()

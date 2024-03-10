@@ -70,23 +70,24 @@ class MainWindow(BaseMainWindow):
         self.ppwInterface = PPWclass(self)
         self.ppwInterface.addToolButtonInTitleBar(self.titleBar)
         self.addSubInterface(self.ppwInterface, FIF.PHOTO, '修改图片')
-
         self.connectWidgetSignal()
 
     def connectWidgetSignal(self):
         # 连接组件信号
         self.dvwInterface.ui.startDownLoad_PB.clicked.connect(self.dvw_startDownLoad_PB_clicked)
-        self.switchToWidget.connect(self.initSomeWidget)  #
+        self.switchToWidget.connect(self.do_afterSwitchFun)  #
 
-    def initSomeWidget(self, widget):
+    def do_afterSwitchFun(self, widget):
         # 如果navigationInterface上的某个按钮被点击
         if widget == self.ppwInterface:
+            self.ppwInterface.toolsGroupBox.setHidden(False)
             # 把toolsGroupBox显示出来
             pass
             # 跑一下path.walk在
+            self.ppwInterface.scanDirsAddToDirPathComboBox()
         else:
             # 隐藏toolsGroupBox
-            pass
+            self.ppwInterface.toolsGroupBox.setHidden(True)
 
     def dvw_startDownLoad_PB_clicked(self):
         # 当 下载页面 中的 开始下载按钮 被点击时，触发这个函数
@@ -116,6 +117,6 @@ if __name__ == '__main__':
     testFile = os.path.join(__desktopPath, "0306.xlsx")
     __filePath2 = os.path.join(__desktopPath, "0307.xlsx")
     # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
-    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
+    # forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
 
     app.exec_()

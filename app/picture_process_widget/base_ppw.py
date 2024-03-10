@@ -6,14 +6,13 @@ from pathlib import Path
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QWidget, QGridLayout, QApplication, QLabel, QScrollArea
+from PyQt5.QtWidgets import QWidget, QGridLayout, QApplication, QLabel, QScrollArea, QSpacerItem, QSizePolicy, QLayout
 from qfluentwidgets import ScrollArea
 
 
 class BaseFullScreenPicture(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-
 
         # self.showFullScreen()
         self.gridLayout_1 = QGridLayout(self)  # 第一级layout只装scrollArea
@@ -23,9 +22,10 @@ class BaseFullScreenPicture(QWidget):
         self.scrollArea.setWidgetResizable(True)  # 我手写UI的时候这行好像不用加
         self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.scrollAreaWidgetContents = QWidget()
-        self.gridLayout_2 = QGridLayout(self.scrollAreaWidgetContents)  # 第二级layout，里面是label，
+        self.gridLayout_2 = QGridLayout(self.scrollAreaWidgetContents)  # 第二级layout，里面是pixmapLabel，
         self.gridLayout_2.setContentsMargins(0, 0, 0, 0)
         self.gridLayout_2.setSpacing(0)
+        self.gridLayout_2.setSizeConstraint(QLayout.SetFixedSize)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.gridLayout_1.addWidget(self.scrollArea, 0, 0, 1, 1)
 

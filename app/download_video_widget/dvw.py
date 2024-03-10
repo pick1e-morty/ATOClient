@@ -20,7 +20,8 @@ from loguru import logger
 
 # 这三个全局变量是非常重要的且极有可能变化的，我放到这里显眼一点
 _downloadFileSuffix = ".mp4"
-_downloadRootPath = Path(__file__).parent.parent
+_downloadRootPath = Path(__file__).parent.parent.parent / "pic"
+_downloadRootPath.mkdir(exist_ok=True)
 _unifyTimeFormat = "%Y-%m-%d %H:%M:%S"
 
 

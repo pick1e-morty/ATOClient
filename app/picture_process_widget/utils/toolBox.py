@@ -76,6 +76,27 @@ class ToolsGroupBox(QGroupBox):
         self.delUnMarkImg_PB.setObjectName(u"delUnMarkImg_PB")
         self.delUnMarkImg_PB.setText("删除未标记图片")
         self.horizontalLayout.addWidget(self.delUnMarkImg_PB)
+        self.initColNum_CB()
+        self.initShape_CB()
+        self.initColor_CB()
+
+    def initColNum_CB(self):
+        # 向列数组合框中填充数据
+        # 1，2，3，4，5，6
+        self.colNum_CB.addItems(["1", "2", "3", "4", "5", "6"])
+        self.colNum_CB.setCurrentIndex(3)
+
+    def initShape_CB(self):
+        # 矩形，圆形
+        # 向形状组合框中填充数据
+        self.shape_CB.addItems(["矩形", "圆形"])
+        self.shape_CB.setCurrentIndex(0)
+
+    def initColor_CB(self):
+        # 向颜色组合框中填充数据F
+        # 黑色，红色，黄色，白色
+        self.color_CB.addItems(["黑色", "红色", "黄色", "白色"])
+        self.color_CB.setCurrentIndex(0)
 
 
 if __name__ == '__main__':
