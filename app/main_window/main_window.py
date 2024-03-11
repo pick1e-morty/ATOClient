@@ -39,7 +39,7 @@ class MainWindow(BaseMainWindow):
             logger.error(str(errorText))
             errorMsgBox.contentLabel.setText(str(errorText))
             errorMsgBox.exec()  # 这里或许能加个重启应用
-            exit(1)
+            sys.exit(1)
 
     def load_formsConfig(self):
         # 载入窗体UI配置
@@ -54,13 +54,13 @@ class MainWindow(BaseMainWindow):
             logger.error(str(errorText))
             errorMsgBox.contentLabel.setText(str(errorText))
             errorMsgBox.exec()
-            exit(1)
+            sys.exit(1)
         except ValidateError as errorText:
             errorText = f"界面配置文件中的参数有误\n这是config异常基类，意料之外的错误\n{errorText}"
             logger.error(str(errorText))
             errorMsgBox.contentLabel.setText(str(errorText))
             errorMsgBox.exec()
-            exit(1)
+            sys.exit(1)
 
     def initUI(self):
         self.epwInterface = EPWclass(self)
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     forms.show()
     forms.splashScreen.finish()
     # TODO 测试参数，记得改回第一个页面， 参数1,3
-    forms.stackWidget.setCurrentIndex(3)
+    forms.stackWidget.setCurrentIndex(1)
 
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     testFile = os.path.join(__desktopPath, "0306.xlsx")

@@ -18,7 +18,8 @@ class BaseFullScreenPicture(QWidget):
         self.gridLayout_1 = QGridLayout(self)  # 第一级layout只装scrollArea
         self.gridLayout_1.setContentsMargins(0, 0, 0, 0)
         self.gridLayout_1.setSpacing(0)
-        self.scrollArea = QScrollArea(self)
+        self.scrollArea = ScrollArea(self)
+        self.scrollArea.setStyleSheet("border:0px")
         self.scrollArea.setWidgetResizable(True)  # 我手写UI的时候这行好像不用加
         self.scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.scrollAreaWidgetContents = QWidget()

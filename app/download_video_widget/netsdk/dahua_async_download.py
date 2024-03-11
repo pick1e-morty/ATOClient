@@ -26,6 +26,7 @@ dahuaClient = None
 # 最好使用全局变量吧，不然延迟导入就没了
 
 
+
 class StopDownloadHandleThread(threading.Thread):
     def __init__(self, downloadHandleDict, downloadHandleDictCondition, updateDownloadStatusFun):
         """
@@ -97,6 +98,7 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
             downloadResultListCondition.notify()
 
     def execute_operation(func, funcArgs, sucessText, errorText, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
+        # TDOO 就是这里，改造为装饰器，一般情况下只需要传两个参数就好了
         # 目前都是执行的sdk的方法，且上报状态也都是发给下载进度表格的
         try:
             executeResult = func(*funcArgs)
@@ -107,7 +109,7 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
             logger.error(f"{deviceAddress}{errorText},{e}")
             errorStr = str(e) + errorText
             updateDownloadStatusFun(0, errorStr, widgetEnum)
-            exit(1)
+            sys.exit(1)
 
     global dahuaClient  # sdkClient的全局变量是避免不掉的
 
@@ -126,7 +128,7 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     userID, device_info = execute_operation(dahuaClient.login, [easy_login_info], "登录成功", "登录失败")
     # if userID == 0:
     #     logger.error("登录失败")
-    #     exit(1)
+    #     sys.exit(1)
     print("硬盘数量", device_info.stuDeviceInfo.nDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
 
     downloadHandleDict = {}  # key是下载句柄，value是downloadArg.savePath，下载地址。iNDEX,下载参数在列表中的索引

@@ -1,6 +1,0 @@
-1. addFilePathsToexcelFile_LWData作为IO密集型方法，可以开个线程池
-2. 月台配置也可以做一个模板
-
-# 下载录像
-# 海康第一个总是查半天的，哦，把find关了就好了(开玩笑的哈)
-# 大华是错误，network_error

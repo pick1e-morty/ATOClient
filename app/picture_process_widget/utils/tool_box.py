@@ -1,18 +1,21 @@
 import sys
+from pathlib import Path
 
 from PyQt5.QtCore import QRect, Qt
+from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QApplication, QFrame, QHBoxLayout, QSizePolicy, QGroupBox
-from qfluentwidgets import PushButton, ComboBox, BodyLabel
+from qfluentwidgets import PushButton, ComboBox, BodyLabel, LineEdit
 
 
 class ToolsGroupBox(QGroupBox):
-    def __init__(self, parent=None):
+    def __init__(self, picSuffixTuple,parent=None):
         super().__init__(parent)
         self.setObjectName(u"groupBox")
+        self.picSuffixTuple = picSuffixTuple
         self.initUI()
 
     def initUI(self):
-        self.setGeometry(QRect(100, 260, 644, 34))
+        self.setGeometry(QRect(40, 130, 850, 35))
         self.setStyleSheet("QGroupBox { border: 1px solid transparent; }")  # groupBox边框透明
         # 尺寸策略对象，设置水平和垂直拉伸为0，即不允许groupBox拉伸
         sizePolicy1 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -24,6 +27,15 @@ class ToolsGroupBox(QGroupBox):
         self.horizontalLayout = QHBoxLayout(self)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.horizontalLayout.setContentsMargins(9, 0, 9, 0)
+        self.counting_L = BodyLabel(self)  # 统计图片数量的标签
+        self.counting_L.setObjectName(u"counting_L")
+        self.counting_L.setText("总0已0未0")
+        self.horizontalLayout.addWidget(self.counting_L)
+        self.line_7 = QFrame(self)
+        self.line_7.setObjectName(u"line_7")
+        self.line_7.setFrameShape(QFrame.VLine)
+        self.line_7.setFrameShadow(QFrame.Sunken)
+        self.horizontalLayout.addWidget(self.line_7)
         self.BodyLabel_4 = BodyLabel(self)
         self.BodyLabel_4.setObjectName(u"BodyLabel_4")
         self.BodyLabel_4.setText("目录")
@@ -55,6 +67,20 @@ class ToolsGroupBox(QGroupBox):
         self.shape_CB = ComboBox(self)
         self.shape_CB.setObjectName(u"shape_CB")
         self.horizontalLayout.addWidget(self.shape_CB)
+        self.line_8 = QFrame(self)
+        self.line_8.setObjectName(u"line_8")
+        self.line_8.setFrameShape(QFrame.VLine)
+        self.line_8.setFrameShadow(QFrame.Sunken)
+        self.horizontalLayout.addWidget(self.line_8)
+        self.BodyLabel_6 = BodyLabel(self)
+        self.BodyLabel_6.setObjectName(u"BodyLabel_6")
+        self.BodyLabel_6.setText(u"线宽")
+        self.horizontalLayout.addWidget(self.BodyLabel_6)
+        self.penWidth_LE = LineEdit(self)
+        self.penWidth_LE.setObjectName(u"penWidth_LE")
+        self.penWidth_LE.setMaximumWidth(50)
+        self.penWidth_LE.setValidator(QDoubleValidator(0.01, 99.99, 2))
+        self.horizontalLayout.addWidget(self.penWidth_LE)
         self.line_5 = QFrame(self)
         self.line_5.setObjectName(u"line_5")
         self.line_5.setFrameShape(QFrame.VLine)
@@ -78,6 +104,7 @@ class ToolsGroupBox(QGroupBox):
         self.horizontalLayout.addWidget(self.delUnMarkImg_PB)
         self.initColNum_CB()
         self.initShape_CB()
+        self.initPenWidth_LE()
         self.initColor_CB()
 
     def initColNum_CB(self):
@@ -92,11 +119,27 @@ class ToolsGroupBox(QGroupBox):
         self.shape_CB.addItems(["矩形", "圆形"])
         self.shape_CB.setCurrentIndex(0)
 
+    def initPenWidth_LE(self):
+        self.penWidth_LE.setText("3")
+
     def initColor_CB(self):
         # 向颜色组合框中填充数据F
         # 黑色，红色，黄色，白色
-        self.color_CB.addItems(["黑色", "红色", "黄色", "白色"])
+        colorDict = {"黑色": Qt.black, "红色": Qt.red, "黄色": Qt.yellow, "白色": Qt.white}
+        for key, value in colorDict.items():
+            self.color_CB.addItem(key, userData=value)
         self.color_CB.setCurrentIndex(0)
+
+    def countingFile(self):
+        dirPath = self.dirPath_CB.itemData(self.dirPath_CB.currentIndex())
+        fileList = [file for file in dirPath.iterdir() if file.is_file() and file.suffix in self.picSuffixTuple]
+
+        total = len(fileList)
+        marked = sum(1 for p in fileList if Path(p).suffix == '.jpeg')
+        unMarked = total - marked
+
+        self.counting_L.setText(f"总{total}已{marked}未{unMarked}")  # 测试阶段，后面成模式了要整合为函数
+
 
 
 if __name__ == '__main__':

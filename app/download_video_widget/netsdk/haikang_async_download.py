@@ -107,7 +107,7 @@ def haikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
             logger.error(f"{deviceAddress}{errorText},{e}")
             errorStr = str(e) + errorText
             updateDownloadStatusFun(0, errorStr, widgetEnum)
-            exit(1)
+            sys.exit(1)
 
     global haikangClient  # sdkClient的全局变量是避免不掉的
 
@@ -126,7 +126,7 @@ def haikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
     userID, device_info = execute_operation(haikangClient.login, [easy_login_info], "登录成功", "登录失败")
     # if userID == 0:
     #     logger.error("登录失败")
-    #     exit(1)
+    #     sys.exit(1)
     print("硬盘数量", device_info.struDeviceV30.byDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
 
     downloadHandleDict = {}  # key是下载句柄，value是downloadArg.savePath，下载地址。iNDEX,下载参数在列表中的索引

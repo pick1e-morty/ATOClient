@@ -11,6 +11,7 @@ __pycache__
 *.mp4
 *.jpg
 *.log
+*.jpeg
 
 # viztracer的结果文件
 result.json
