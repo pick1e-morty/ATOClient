@@ -80,11 +80,11 @@ class MainWindow(BaseMainWindow):
     def do_afterSwitchFun(self, widget):
         # 如果navigationInterface上的某个按钮被点击
         if widget == self.ppwInterface:
-            self.ppwInterface.toolsGroupBox.setHidden(False)
             # 把toolsGroupBox显示出来
-            pass
-            # 跑一下path.walk在
-            self.ppwInterface.scanDirsAddToDirPathComboBox()
+            self.showMaximized()  # 父类窗体最大化
+            QApplication.processEvents()    # 立刻flush一下，不然后面的代码对整个窗体的size判断会有问题
+            self.ppwInterface.toolsGroupBox.setHidden(False)
+            self.ppwInterface.scanDirsAddToDirPathComboBox()    # 重新扫描一下有哪些文件夹
         else:
             # 隐藏toolsGroupBox
             self.ppwInterface.toolsGroupBox.setHidden(True)
@@ -101,6 +101,7 @@ class MainWindow(BaseMainWindow):
         self.dvwInterface.addDownloadList(excelFileListWidgetItemDataStructList)
 
 
+
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
@@ -110,13 +111,12 @@ if __name__ == '__main__':
     forms = MainWindow()
     forms.show()
     forms.splashScreen.finish()
-    # TODO 测试参数，记得改回第一个页面， 参数1,3
     forms.stackWidget.setCurrentIndex(1)
 
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     testFile = os.path.join(__desktopPath, "0306.xlsx")
     __filePath2 = os.path.join(__desktopPath, "0307.xlsx")
     # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
-    # forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
+    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
 
     app.exec_()

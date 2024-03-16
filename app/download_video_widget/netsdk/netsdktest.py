@@ -5,8 +5,8 @@ from datetime import timedelta
 from pathlib import Path
 from time import sleep
 
-from UnifyNetSDK import HaikangNetSDK
-from UnifyNetSDK.haikang.hk_netsdk_exception import HKNetSDKException
+from UnifyNetSDK import DaHuaNetSDK
+from UnifyNetSDK.dahua.dh_netsdk_exception import DHNetSDKException  # TODO 这个地方的导入应该是有办法统一一下的
 from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg, UnifyFindFileByTimeArg
 
 from loguru import logger
@@ -15,9 +15,9 @@ from app.download_video_widget.utils.video2pic import tsPic
 from app.download_video_widget.dvw_define import DevLoginAndDownloadArgSturct, DVWTableWidgetEnum
 
 logger.remove()
-logger.add(sys.stdout, level="TRACE")
+logger.add(sys.stdout, level="INFO")
 
-haikangClient = None
+dahuaClient = None
 
 
 # 如果不想用全局变量这种写法就需要
@@ -62,10 +62,9 @@ class StopDownloadHandleThread(threading.Thread):
                     self.downloadHandleDictCondition.wait()  # 如果下载句柄列表为空，但生产者没有发出完毕信号，则线程阻塞等待。
             for downloadHandle in list(self.downloadHandleDict.keys()):  # 迭代字典的时候不允许更改字典（下面进行了一个pop操作），所以做了个keys的副本
                 # 上面取key是原子的，但是list()不是原子操作。这正好，因为由于查询是个非常耗时的操作，查询的期间是不影响生产者继续添加句柄的。就等下一批再处理呗
-                stopRestlt = haikangClient.stopDownLoadTimer(downloadHandle)
-                if stopRestlt == 100:
+                stopRestlt = dahuaClient.stopDownLoadTimer(downloadHandle)
+                if stopRestlt is True:
                     savePath, iNDEX = self.downloadHandleDict[downloadHandle]
-                    tsPic(absVideoPath=savePath)
                     status = "下载成功"  # 目前就实现了这么一种状态，想要其他状态就要自己写stopDownLoadTimer
                     self.updateDownloadStatusFun(iNDEX, status)
                     with self.downloadHandleDictCondition:  # 下载成功后就可以删掉这个句柄了
@@ -79,7 +78,7 @@ class StopDownloadHandleThread(threading.Thread):
             sleep(0.5)
 
 
-def haikangDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgSturct):
+def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgSturct):
     # 参数还要加，是否查找录像，日志保存地址，
 
     deviceAddress = None  # 记录下整个py文件内没有变化的ip地址，这样就不用每次都传了
@@ -91,25 +90,25 @@ def haikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
         跟下载参数downloadArg有关的都是往下载状态表格上报的
         跟sdkClient有关的都是往下载进度表格上报的，因为sdkClient是下载进度表格的单位
         """
-
         downloadResultList.append([widgetEnum, deviceAddress, f_iNDEX, f_status])
         with downloadResultListCondition:
             downloadResultListCondition.notify()
 
     def execute_operation(func, funcArgs, sucessText, errorText, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
+        # TDOO 就是这里，改造为装饰器，一般情况下只需要传两个参数就好了
         # 目前都是执行的sdk的方法，且上报状态也都是发给下载进度表格的
         try:
             executeResult = func(*funcArgs)
             logger.info(f"{deviceAddress}{sucessText}")
             updateDownloadStatusFun(0, sucessText, widgetEnum)
             return executeResult
-        except HKNetSDKException as e:
+        except DHNetSDKException as e:
             logger.error(f"{deviceAddress}{errorText},{e}")
             errorStr = str(e) + errorText
             updateDownloadStatusFun(0, errorStr, widgetEnum)
             sys.exit(1)
 
-    global haikangClient  # sdkClient的全局变量是避免不掉的
+    global dahuaClient  # sdkClient的全局变量是避免不掉的
 
     easy_login_info = UnifyLoginArg()  # 初始化登陆参数
     easy_login_info.userName = devArgs.devUserName
@@ -117,19 +116,18 @@ def haikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
     easy_login_info.devicePort = devArgs.devPort
     easy_login_info.deviceAddress = deviceAddress = devArgs.devIP  # 先做取deviceAddress，因为下面的init也要以设备ip地址做报错根源参照
 
-    curFilePath = Path(__file__).parent
-    haikangClient = HaikangNetSDK()      # 这个改动只能在打包后才能成功运行，直接解释器运行是失败的
-    execute_operation(haikangClient.init, [], "初始化成功", "初始化失败")
+    dahuaClient = DaHuaNetSDK()
+    execute_operation(dahuaClient.init, [], "初始化成功", "初始化失败")
     absLogPath = Path(__file__).absolute().parent.parent.parent
-    absLogPath = absLogPath.joinpath("hk_netsdk_log")  # TODO 打包阶段时要将log统一对齐到rootPath/log文件夹下
-    logger.info(f"海康netsdk的log地址为{str(absLogPath)}")
-    execute_operation(haikangClient.logopen, [str(absLogPath)], "打开日志成功", "打开日志失败")
+    absLogPath = absLogPath.joinpath("dh_netsdk_log/netsdk1.log")  # TODO 打包阶段时要将log统一对齐到rootPath/log文件夹下
+    logger.info(f"大华netsdk的log地址为{str(absLogPath)}")
+    execute_operation(dahuaClient.logopen, [str(absLogPath)], "打开日志成功", "打开日志失败")
 
-    userID, device_info = execute_operation(haikangClient.login, [easy_login_info], "登录成功", "登录失败")
+    userID, device_info = execute_operation(dahuaClient.login, [easy_login_info], "登录成功", "登录失败")
     # if userID == 0:
     #     logger.error("登录失败")
     #     sys.exit(1)
-    print("硬盘数量", device_info.struDeviceV30.byDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
+    print("硬盘数量", device_info.stuDeviceInfo.nDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
 
     downloadHandleDict = {}  # key是下载句柄，value是downloadArg.savePath，下载地址。iNDEX,下载参数在列表中的索引
     downloadHandleDictCondition = threading.Condition()  # 下载句柄字典的锁，线程安全
@@ -137,40 +135,15 @@ def haikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
     stopDownloadThreadInstance.setName(str(devArgs.devIP))  # 给线程加个名字(以IP为单位)，查错的时候方便点
     stopDownloadThreadInstance.start()
 
-    # TODO 海康应该没这个问题吧
-    # logger.error("下载主进程休眠5秒")
-    # sleep(5)  # TODD  休眠5秒，然后才能正常的进行录像查找，从第一个查找失败到第四个查找成功，最短时间是5秒，我不清楚原因
-    # 如果直接运行这个文件main函数，就不用做这个sleep，所以问题应该是出来了进程池上
-    # sdk第一方的log提示 用json格式的参数进行查找录像失败
     for iNDEX, downloadArg in enumerate(devArgs.downloadArgList):
-        # 不查了，md都是事
-
-        # findArg = UnifyFindFileByTimeArg()  # 遍历下载参数，先查录像是否存在，然后再下载
-        # findArg.channel = downloadArg.channel
-        # findArg.startTime = downloadArg.downloadTime
-        # findArg.stopTime = downloadArg.downloadTime + timedelta(seconds=1)
-        # try:
-        #     findResult = haikangClient.syncFindFileByTime(userID, findArg)  # 这个查询最高居然可达780ms，过分。上层还是用两套代码吧，海康的查询能做异步的，那就让他异步。不然代价太高了
-        #     if findResult is not True:
-        #         text = findArg.getSimpleReadMsg() + "\n没有查到录像"
-        #         logger.error(text)
-        #         status = "没有查到录像"
-        #         updateDownloadStatusFun(iNDEX, status)
-        #         continue
-        # except HKNetSDKException as e:
-        #     text = findArg.getSimpleReadMsg() + f"\n{e}"
-        #     logger.error(text)
-        #     status = str(e)
-        #     updateDownloadStatusFun(iNDEX, status)
-        #     continue
         downloadbytimeArg = UnifyDownLoadByTimeArg()
         downloadbytimeArg.channel = downloadArg.channel
         downloadbytimeArg.saveFilePath = downloadArg.savePath
         downloadbytimeArg.startTime = downloadArg.downloadTime
         downloadbytimeArg.stopTime = downloadArg.downloadTime + timedelta(seconds=1)
-        downLoadHandle = haikangClient.asyncDownLoadByTime(userID, downloadbytimeArg)
         try:
-            if downLoadHandle != -1:
+            downLoadHandle = dahuaClient.asyncDownLoadByTime(userID, downloadbytimeArg)
+            if downLoadHandle != 0:
                 with downloadHandleDictCondition:
                     downloadHandleDict[downLoadHandle] = [downloadArg.savePath, iNDEX]
                     downloadHandleDictCondition.notify()
@@ -180,7 +153,7 @@ def haikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
                 logger.error(text)
                 status = "下载句柄为空"
                 updateDownloadStatusFun(iNDEX, status)
-        except HKNetSDKException as e:
+        except DHNetSDKException as e:
             text = downloadbytimeArg.getSimpleReadMsg() + f"\n{e}"
             text += "\n下载句柄为空，该录像下载失败"
             logger.error(text)
@@ -194,14 +167,13 @@ def haikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
     if stopDownloadThreadInstance.is_alive():
         logger.error("StopDownloadHandleThread子线程关闭超时")
 
-    execute_operation(haikangClient.logout, [userID], "登出成功", "登出失败")
-    execute_operation(haikangClient.logclose, [], "关闭日志成功", "关闭日志失败")
-    execute_operation(haikangClient.cleanup, [], "SDK释放资源成功", "SDK释放资源失败")
+    execute_operation(dahuaClient.logout, [userID], "登出成功", "登出失败")
+    execute_operation(dahuaClient.logclose, [], "关闭日志成功", "关闭日志失败")
+    execute_operation(dahuaClient.cleanup, [], "SDK释放资源成功", "SDK释放资源失败")
 
     if stopDownloadThreadInstance.is_alive():
         threadName = stopDownloadThreadInstance.getName()
         logger.error(f"{threadName}的关闭下载句柄线程超时")
-
     logger.info(f"{deviceAddress}下载子进程关闭")
 
 
@@ -211,4 +183,4 @@ if __name__ == "__main__":
     manager = multiprocessing.Manager()
     t_downloadResultList = manager.list()
     t_downloadResultListCondition = manager.Condition()
-    haikangDownloader(t_downloadResultList, t_downloadResultListCondition, testUserConfig)
+    dahuaDownloader(t_downloadResultList, t_downloadResultListCondition, testUserConfig)

@@ -15,7 +15,7 @@ from app.download_video_widget.utils.video2pic import tsPic
 from app.download_video_widget.dvw_define import DevLoginAndDownloadArgSturct, DVWTableWidgetEnum
 
 logger.remove()
-logger.add(sys.stdout, level="TRACE")
+logger.add(sys.stdout, level="INFO")
 
 dahuaClient = None
 
@@ -24,7 +24,6 @@ dahuaClient = None
 # from UnifyNetSDK.haikang.hk_netsdk import HaikangNetSDK
 # 这样导入模块，我包里的__init__文件做了延迟导入，所以这个类实际会被识别为一个function，从而导致直接调用类方法失效（但实例是正常的）
 # 最好使用全局变量吧，不然延迟导入就没了
-
 
 
 class StopDownloadHandleThread(threading.Thread):
@@ -121,8 +120,9 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
 
     dahuaClient = DaHuaNetSDK()
     execute_operation(dahuaClient.init, [], "初始化成功", "初始化失败")
-    absLogPath = Path(__file__).absolute().parent
+    absLogPath = Path(__file__).absolute().parent.parent.parent
     absLogPath = absLogPath.joinpath("dh_netsdk_log/netsdk1.log")  # TODO 打包阶段时要将log统一对齐到rootPath/log文件夹下
+    logger.info(f"大华netsdk的log地址为{str(absLogPath)}")
     execute_operation(dahuaClient.logopen, [str(absLogPath)], "打开日志成功", "打开日志失败")
 
     userID, device_info = execute_operation(dahuaClient.login, [easy_login_info], "登录成功", "登录失败")
@@ -136,45 +136,56 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     stopDownloadThreadInstance = StopDownloadHandleThread(downloadHandleDict, downloadHandleDictCondition, updateDownloadStatusFun)
     stopDownloadThreadInstance.setName(str(devArgs.devIP))  # 给线程加个名字(以IP为单位)，查错的时候方便点
     stopDownloadThreadInstance.start()
+
     # logger.error("下载主进程休眠5秒")
-    # sleep(5)  # TODD  休眠5秒，然后才能正常的进行录像查找，从第一个查找失败到第四个查找成功，最短时间是5秒，我不清楚原因
+    # errorStr = "需要等5秒"
+    # updateDownloadStatusFun(0, errorStr, DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE)
+    sleep(1)  # TODD  休眠5秒，然后才能正常的进行录像查找，从第一个查找失败到第四个查找成功，最短时间是5秒，我不清楚原因
+
     # 如果直接运行这个文件main函数，就不用做这个sleep，所以问题应该是出来了进程池上
     # sdk第一方的log提示 用json格式的参数进行查找录像失败
     for iNDEX, downloadArg in enumerate(devArgs.downloadArgList):
-        findArg = UnifyFindFileByTimeArg()  # 遍历下载参数，先查录像是否存在，然后再下载
-        findArg.channel = downloadArg.channel
-        findArg.startTime = downloadArg.downloadTime
-        findArg.stopTime = downloadArg.downloadTime + timedelta(seconds=1)
-        try:
-            findResult = dahuaClient.syncFindFileByTime(userID, findArg)  # 这个查询最高居然可达780ms，过分。上层还是用两套代码吧，海康的查询能做异步的，那就让他异步。不然代价太高了
-            if findResult is not True:
-                text = findArg.getSimpleReadMsg() + "\n没有查到录像"
-                logger.error(text)
-                status = "没有查到录像"
-                updateDownloadStatusFun(iNDEX, status)
-                continue
-        except DHNetSDKException as e:
-            text = findArg.getSimpleReadMsg() + f"\n{e}"
-            logger.error(text)
-            status = str(e)
-            updateDownloadStatusFun(iNDEX, status)
-            continue
+        # 查找不搞了
+        # findArg = UnifyFindFileByTimeArg()  # 遍历下载参数，先查录像是否存在，然后再下载
+        # findArg.channel = downloadArg.channel
+        # findArg.startTime = downloadArg.downloadTime
+        # findArg.stopTime = downloadArg.downloadTime + timedelta(seconds=1)
+        # try:
+        #     findResult = dahuaClient.syncFindFileByTime(userID, findArg)  # 这个查询最高居然可达780ms，过分。上层还是用两套代码吧，海康的查询能做异步的，那就让他异步。不然代价太高了
+        #     if findResult is not True:
+        #         text = findArg.getSimpleReadMsg() + "\n没有查到录像"
+        #         logger.error(text)
+        #         status = "没有查到录像"
+        #         updateDownloadStatusFun(iNDEX, status)
+        #         continue
+        # except DHNetSDKException as e:
+        #     text = findArg.getSimpleReadMsg() + f"\n{e}"
+        #     logger.error(text)
+        #     status = str(e)
+        #     updateDownloadStatusFun(iNDEX, status)
+        #     continue
         downloadbytimeArg = UnifyDownLoadByTimeArg()
         downloadbytimeArg.channel = downloadArg.channel
         downloadbytimeArg.saveFilePath = downloadArg.savePath
         downloadbytimeArg.startTime = downloadArg.downloadTime
         downloadbytimeArg.stopTime = downloadArg.downloadTime + timedelta(seconds=1)
-        downLoadHandle = dahuaClient.asyncDownLoadByTime(userID, downloadbytimeArg)
-
-        if downLoadHandle != 0:
-            with downloadHandleDictCondition:
-                downloadHandleDict[downLoadHandle] = [downloadArg.savePath, iNDEX]
-                downloadHandleDictCondition.notify()
-        else:
-            text = downloadbytimeArg.getSimpleReadMsg()
+        try:
+            downLoadHandle = dahuaClient.asyncDownLoadByTime(userID, downloadbytimeArg)
+            if downLoadHandle != 0:
+                with downloadHandleDictCondition:
+                    downloadHandleDict[downLoadHandle] = [downloadArg.savePath, iNDEX]
+                    downloadHandleDictCondition.notify()
+            else:
+                text = downloadbytimeArg.getSimpleReadMsg()
+                text += "\n下载句柄为空，该录像下载失败"
+                logger.error(text)
+                status = "下载句柄为空"
+                updateDownloadStatusFun(iNDEX, status)
+        except DHNetSDKException as e:
+            text = downloadbytimeArg.getSimpleReadMsg() + f"\n{e}"
             text += "\n下载句柄为空，该录像下载失败"
             logger.error(text)
-            status = "下载句柄为空"
+            status = str(e)
             updateDownloadStatusFun(iNDEX, status)
 
     with downloadHandleDictCondition:  # 如果没有一个下载句柄传过去的话，就需要手动解锁一下，让子线程顺利关闭
@@ -191,6 +202,7 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     if stopDownloadThreadInstance.is_alive():
         threadName = stopDownloadThreadInstance.getName()
         logger.error(f"{threadName}的关闭下载句柄线程超时")
+    logger.info(f"{deviceAddress}下载子进程关闭")
 
 
 if __name__ == "__main__":

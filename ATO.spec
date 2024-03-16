@@ -1,15 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_dynamic_libs
+
+binaries = []
+binaries += collect_dynamic_libs('UnifyNetSDK')
 
 
 a = Analysis(
-    ['app\\ATO.py'],
+    ['C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py'],
     pathex=[],
-    binaries=[],
-    datas=[],
+    binaries=binaries,
+    datas=[('C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData', 'AppData/')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=['hook.py'],
+    runtime_hooks=['C:/Users/Administrator/Documents/CodeProject/ATO/hook.py'],
     excludes=[],
     noarchive=False,
 )
@@ -31,6 +35,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    contents_directory='.',
 )
 coll = COLLECT(
     exe,

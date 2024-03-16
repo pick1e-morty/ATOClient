@@ -15,7 +15,8 @@ from app.picture_process_widget.utils.tool_box import ToolsGroupBox
 from app.picture_process_widget.utils.writeable_label import WriteableLabel
 
 # dvw下载后的图片存放地址，ppw要从这个文件夹中取子级文件夹中的图片
-picDirPath = Path(__file__).parent.parent.parent / "pic"
+picDirPath = Path(__file__).parent.parent.parent.parent / "pic"
+picDirPath.mkdir(exist_ok=True)
 
 
 class PPWclass(BaseFullScreenPicture):  # TODO 这个基类的名字记得统一
@@ -30,9 +31,6 @@ class PPWclass(BaseFullScreenPicture):  # TODO 这个基类的名字记得统一
         self.picSuffixTuple = (".jpeg", ".jpg")
 
         self.markedImgLabel = None
-
-        # TODO debug阶段的代码 后期要等父类主窗体那边进入本 组件才需要最大化
-        parent.showMaximized()  # 父类窗体最大化
 
     def addToolButtonInTitleBar(self, titleBarWidget):
         # 新功能，如果当前界面是 修改图片 就在标题栏上加几个按钮
@@ -138,12 +136,12 @@ class PPWclass(BaseFullScreenPicture):  # TODO 这个基类的名字记得统一
 
     @pyqtSlot(bool)
     def delUnMarkImg(self, clicked):
-        gb = self.toolsGroupBox
-        dirPath = gb.dirPath_CB.itemData(gb.dirPath_CB.currentIndex())  # 当前选中文件夹和列数
-        [file.unlink(missing_ok=True) for file in dirPath.iterdir() if file.is_file() and file.suffix == ".jpg"]
+        dirPath = self.toolsGroupBox.dirPath_CB.itemData(self.toolsGroupBox.dirPath_CB.currentIndex())  # 当前选中文件夹和列数
+        if dirPath:
+            [file.unlink(missing_ok=True) for file in dirPath.iterdir() if file.is_file() and file.suffix == ".jpg"]
+            # TODO 这步查layout所有的label，遍历label的filePath属性，不在walk的新文件列表中就给removeWidget了
+            self.addPictureLabel()  # 刷新，不存在的文件要删除在界面上的label。
 
-        # TODO 这步查layout所有的label，遍历label的filePath属性，不在walk的新文件列表中就给removeWidget了
-        self.addPictureLabel()  # 刷新，不存在的文件要删除在界面上的label。
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

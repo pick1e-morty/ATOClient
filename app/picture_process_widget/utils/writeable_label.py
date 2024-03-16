@@ -18,7 +18,8 @@ class WriteableLabel(QLabel):
         self.drawing = False  #
         self.start = False
 
-        self.markPixmap = QPixmap(r"C:\Users\Administrator\Documents\CodeProject\ATO\app\picture_process_widget\mark.png")
+        markImgFilePath = Path(__file__).parent.parent.parent / "AppData/mark.png"
+        self.markPixmap = QPixmap(str(markImgFilePath))
         self.markFlag = False
         self.unWriteable = False  # 不可编辑
 
@@ -55,32 +56,26 @@ class WriteableLabel(QLabel):
 
     def paintEvent(self, event):
         super().paintEvent(event)
-
+        painter = QPainter(self)
+        # https://doc.qt.io/qtforpython-5/PySide2/QtGui/QPainter.html#PySide2.QtGui.PySide2.QtGui.QPainter.begin
+        # 文档说end是自动的
+        # painter.begin(self)
         if self.markFlag:
-            painter = QPainter(self)
-            painter.begin(self)
             painter.drawPixmap(self.rect(), self.markPixmap)
-            painter.end()
         if self.drawing:
-            painter = QPainter()
-            painter.begin(self)
             pen = QPen(self.palette.color, self.palette.penWidth)
             painter.setPen(pen)
             if self.palette.shape == "矩形":
                 painter.drawRect(QRect(self.startPoint, self.endPoint))
             elif self.palette.shape == "圆形":
                 painter.drawEllipse(QRect(self.startPoint, self.endPoint))
-            painter.end()
         elif self.startPoint is not None and self.endPoint is not None:  # 拖动结束后还要继续画
-            painter = QPainter()
-            painter.begin(self)
             pen = QPen(self.palette.color, self.palette.penWidth)
             painter.setPen(pen)
             if self.palette.shape == "矩形":
                 painter.drawRect(QRect(self.startPoint, self.endPoint))
             elif self.palette.shape == "圆形":
                 painter.drawEllipse(QRect(self.startPoint, self.endPoint))
-            painter.end()
 
     def mousePressEvent(self, event):
         if not self.start and self.unWriteable is not True:

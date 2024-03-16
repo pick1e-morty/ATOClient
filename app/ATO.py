@@ -18,13 +18,24 @@ if __name__ == '__main__':
     forms = MainWindow()
     forms.show()
     forms.splashScreen.finish()
-    # TODO 测试参数，记得改回第一个页面， 参数1,3
-    forms.stackWidget.setCurrentIndex(3)
+    forms.stackWidget.setCurrentIndex(1)
 
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     testFile = os.path.join(__desktopPath, "0306.xlsx")
     __filePath2 = os.path.join(__desktopPath, "0307.xlsx")
     # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
-    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
+    # forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
 
     app.exec_()
+
+# 现在的文件体积是200mb，7z极限压缩后是50mb
+
+# pyinstaller --noconfirm --onedir --console --clean
+# --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py"
+# --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/"
+# --collect-binaries "UnifyNetSDK"  # 这个参数的对象居然是模块
+# "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
+
+
+
+# pyinstaller --noconfirm --onedir --contents-directory . --console --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK"  "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"

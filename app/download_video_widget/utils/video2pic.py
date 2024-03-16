@@ -19,7 +19,7 @@ def tsPic(absVideoPath: str, absPicPath: str = None):
     nPort = playClient.getFreePort()
     playClient.openFile(nPort, absVideoPath)
     playClient.play(nPort)
-    time.sleep(0.1)  # 要等dll那边把数据“填充”到port才能开始操作
+    time.sleep(0.2)  # 要等dll那边把数据“填充”到port才能开始操作
     playClient.catchPic(nPort, absPicPath)
     playClient.stop(nPort)
     playClient.close(nPort)

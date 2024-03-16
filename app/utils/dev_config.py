@@ -91,9 +91,11 @@ class DevConfigFileContentIsInvalidException(Exception):
         super().__init__(self.message)
 
 
-def getYtConfigFromConfigFile(devConfigFilePath: Union[Path, str] = None) -> Dict[str, YTConfigDataStruct]:
+def getYtConfigFromConfigFile(a_devConfigFilePath: Union[Path, str] = None) -> Dict[str, YTConfigDataStruct]:
     # 从配置文件中读取月台配置
-    devConfigFilePath = Path(__file__).parent.parent / "AppData/月台配置.xlsx" if devConfigFilePath is None else devConfigFilePath
+    devConfigFilePath = Path(__file__).parent.with_name("AppData") / "月台配置.xlsx" if a_devConfigFilePath is None else a_devConfigFilePath
+
+
     # 如果用户没传地址，就用缺省的
     try:
         wb = load_workbook(str(devConfigFilePath))  # 打开配置文件

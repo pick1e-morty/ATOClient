@@ -49,8 +49,8 @@ def contains_valid_format_codes(input_string):
     return True
 
 
-def getFormsConfigDict():
-    __configFilePath = Path(__file__).parent.parent / "AppData/config.ini"
+def getFormsConfigDict(a_configFilePath=None):
+    __configFilePath = Path(__file__).parent.with_name("AppData") / "config.ini" if a_configFilePath is None else a_configFilePath
     try:
         formsConfigObj = ConfigObj(str(__configFilePath), encoding="UTF8", file_error=True, raise_errors=True)
     except OSError as errorText:

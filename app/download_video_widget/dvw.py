@@ -20,7 +20,8 @@ from loguru import logger
 
 # 这三个全局变量是非常重要的且极有可能变化的，我放到这里显眼一点
 _downloadFileSuffix = ".mp4"
-_downloadRootPath = Path(__file__).parent.parent.parent / "pic"
+# 这个pyinstaller在6.0大版本后居然把onedir做成了一个_internal，然后将exe启动文件放到根目录的上层里去了
+_downloadRootPath = Path(__file__).parent.parent.parent.parent / "pic"  # 所有我这边需要再协调一下
 _downloadRootPath.mkdir(exist_ok=True)
 _unifyTimeFormat = "%Y-%m-%d %H:%M:%S"
 
@@ -157,10 +158,14 @@ class DVWclass(QWidget):
         """
         负责开启进程池的线程，最大进程数量要做参数化的(UI那边要限制最多是cpu_count个)
         """
-        # TODO 如果len(self.classifyDownloadArgsByDevIP.items()) > 8 就开8个，不然就开items的个数，大部分情况是可以少开几个进程的
 
-        # TODO 还有那个bUI怎么这样的啊？什么问题，缩放显示不正常
-        with ProcessPoolExecutor(max_workers=4) as executor:
+        ipNum = len(self.classifyDownloadArgsByDevIP.keys())
+        if ipNum >= 8:
+            maxWorkers = 8  # 大于8个ip就开8个进程池，不然就开对应数量的就好了
+        else:
+            maxWorkers = ipNum
+
+        with ProcessPoolExecutor(max_workers=maxWorkers) as executor:
             for devIP, devArgStruct in self.classifyDownloadArgsByDevIP.items():
                 if devArgStruct.devType == "dahua":
                     executor.submit(dahuaDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
