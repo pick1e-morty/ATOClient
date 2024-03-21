@@ -82,9 +82,9 @@ class MainWindow(BaseMainWindow):
         if widget == self.ppwInterface:
             # 把toolsGroupBox显示出来
             self.showMaximized()  # 父类窗体最大化
-            QApplication.processEvents()    # 立刻flush一下，不然后面的代码对整个窗体的size判断会有问题
+            QApplication.processEvents()  # 立刻flush一下，不然后面的代码对整个窗体的size判断会有问题
             self.ppwInterface.toolsGroupBox.setHidden(False)
-            self.ppwInterface.scanDirsAddToDirPathComboBox()    # 重新扫描一下有哪些文件夹
+            self.ppwInterface.scanDirsAddToDirPathComboBox()  # 重新扫描一下有哪些文件夹
         else:
             # 隐藏toolsGroupBox
             self.ppwInterface.toolsGroupBox.setHidden(True)
@@ -95,11 +95,11 @@ class MainWindow(BaseMainWindow):
         # 遍历excelFile_LW中的所有item，取出每个item的数据
         excelFileListWidgetItemDataStructList = []
         for i in range(self.epwInterface.ui.excelFile_LW.count()):
-            # TODO 这里还没做判空呢
             excelFile_LW_ItemData = self.epwInterface.ui.excelFile_LW.item(i).data(Qt.UserRole)
-            excelFileListWidgetItemDataStructList.append(excelFile_LW_ItemData)
-        self.dvwInterface.addDownloadList(excelFileListWidgetItemDataStructList)
-
+            if excelFile_LW_ItemData.edtw_ItemDataList:  # 判断列表组件中的数据是否为空
+                excelFileListWidgetItemDataStructList.append(excelFile_LW_ItemData)
+        if excelFileListWidgetItemDataStructList:
+            self.dvwInterface.addDownloadList(excelFileListWidgetItemDataStructList)
 
 
 if __name__ == '__main__':

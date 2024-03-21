@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QApplication, QLabel, QScrollA
 from qfluentwidgets import ScrollArea
 
 
-class BaseFullScreenPicture(QWidget):
+class BasePPW(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 

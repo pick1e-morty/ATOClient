@@ -5,7 +5,7 @@ from qfluentwidgets import RoundMenu, Action, MenuAnimationType, FlowLayout, Swi
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_EPW_Widget
 
 
-class Base_EPW_Widget(QWidget):
+class BaseEPW(QWidget):
     """
     这边实现的功能
     1. 左边的ListWidget和右边两个TableWidget的右键菜单
@@ -205,7 +205,7 @@ class Base_EPW_Widget(QWidget):
 if __name__ == "__main__":  # 用于当前窗体测试
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
-    forms = Base_EPW_Widget()  # 创建窗体
+    forms = BaseEPW()  # 创建窗体
     forms.show()
 
     sys.exit(app.exec_())

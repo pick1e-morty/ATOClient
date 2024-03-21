@@ -37,5 +37,4 @@ if __name__ == '__main__':
 # "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
 
 
-
 # pyinstaller --noconfirm --onedir --contents-directory . --console --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK"  "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"

@@ -11,7 +11,8 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QTableWidgetItem)
 from typing import List
 
 from app.download_video_widget.UI.ui_DownloadVideo import Ui_DVW_Widget
-from app.download_video_widget.netsdk.haikang_async_download import haikangDownloader
+from app.download_video_widget.base_dvw import BaseDVW
+from app.download_video_widget.netsdk.haikang_async_download import HaikangDownloader
 from app.download_video_widget.utils.progress_bar import PercentProgressBar
 from app.download_video_widget.netsdk.dahua_async_download import dahuaDownloader
 from app.esheet_process_widget.epw_define import ExcelFileListWidgetItemDataStruct
@@ -26,17 +27,15 @@ _downloadRootPath.mkdir(exist_ok=True)
 _unifyTimeFormat = "%Y-%m-%d %H:%M:%S"
 
 
-class DVWclass(QWidget):
+class DVWclass(BaseDVW):
     downloadStatusChange = pyqtSignal(list)
 
     def __init__(self, parent=None):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
-        self.ui = Ui_DVW_Widget()  # 创建UI对象
-        self.ui.setupUi(self)  # 构造UI界面
-
         # formsConfigDict = parent.formsConfigDict  # dvw界面暂时没有配置
         # self.dvw_config = formsConfigDict["dvw"]  # 后期要做下载进程数量和是否在下载前进行查找操作
         self.devConfigGenerate = parent.devConfigGenerate  # 因为加载设备配置生成器需要读取一个文件，所以由父类统一初始化并激活之后再下发给子类，更重要的是主窗体那边负责exception的报错弹窗
+        # TODO 可以考虑 formsConfigDict 和 devConfigGenerate 用传参的方式，因为现在两个 变量 的生成不是那么复杂了
 
         self.classifyDownloadArgsByDevIP = None  # 把下载参数按照ip分类，因为最终下载时是以ip为单位的
         self.manager: multiprocessing.Manager = None  # 进程通信对象管理器
@@ -48,6 +47,9 @@ class DVWclass(QWidget):
         self.ipRowIndexIndownloadProgress_TW = {}  # 这个变量是用来存储ip所在行的索引的，用来更新进度条的
 
         self.startDownloadThreadInstance = None  # 负责开进程池的线程,startDownloadThread
+
+        self.totalDownloadCount = None  # 下载总量，用来更新 下载进度 标签
+        self.downloadedCount = None  # 下载成功的数量。 　只能从那个线程中进行更改。也是用来更新 下载进度 标签
 
     def classifyArg(self, eflw_ItemDataList: List[ExcelFileListWidgetItemDataStruct]):
         """
@@ -115,7 +117,9 @@ class DVWclass(QWidget):
                 downloadArg = devArgStruct.downloadArgList[downloadArgList_index]  # 在按照索引取出其他需要显示的数据
                 itemTextList.append(downloadArg.channel)  # 这样很聪明，避免了进程通信大数据的耗时传递
                 itemTextList.append(downloadArg.ytName)
-                itemTextList.append(downloadArg.savePath)
+                savePath = Path(downloadArg.savePath)
+                relative_path = savePath.relative_to(_downloadRootPath.parent)  # 缩短一下路径
+                itemTextList.append(relative_path)
                 itemTextList.append(downloadArg.downloadTime)
                 itemTextList.append(downloadStatus)
             except KeyError:
@@ -130,12 +134,13 @@ class DVWclass(QWidget):
             self.ui.downloadStatus_TW.resizeColumnsToContents()  # 调整列宽
             self.ui.downloadStatus_TW.updateSelectedRows()  # 刷新主题显示状态
 
-            # 下面是对ipCount_TW的界面更新，更新进度条
+            # 下面是对ipCount_TW的界面更新，更新进度条。还有下载总量统计
             if downloadStatus == "下载成功":
                 try:
                     row = self.ipRowIndexIndownloadProgress_TW[key_devIP]  # 这个变量是用来存储ip所在行的索引的，用来更新进度条的
                     progressItemWidget = self.ui.downloadProgress_TW.cellWidget(row, 1)
                     progressItemWidget.addOne()
+                    self.ui.argsCount_TL.setText(f"下载进度-({self.downloadedCount}/{self.totalDownloadCount})")
                 except KeyError:
                     logText = f"意外中的情况，这是不应该发生的\n下载器那边传回来一个查不到的设备ip{key_devIP},下载参数列表索引{downloadArgList_index},下载状态{downloadStatus}"
                     logger.error(logText)
@@ -170,7 +175,7 @@ class DVWclass(QWidget):
                 if devArgStruct.devType == "dahua":
                     executor.submit(dahuaDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
                 elif devArgStruct.devType == "haikang":
-                    executor.submit(haikangDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
+                    executor.submit(HaikangDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
                 else:
                     logger.error(f"未知设备类型{devArgStruct.devType}")
 
@@ -209,12 +214,12 @@ class DVWclass(QWidget):
         self.ui.downloadStatus_TW.clearContents()
         self.ui.downloadStatus_TW.setRowCount(0)
         row = 0
-        downloadArgsCount = 0  # 所有ip加一块的下载总量
+        self.totalDownloadCount = 0  # 所有ip加一块的下载总量
         self.ipRowIndexIndownloadProgress_TW = {}  # 这个变量是用来存储ip所在行的索引的，用来更新进度条的
         self.ui.downloadProgress_TW.setRowCount(len(self.classifyDownloadArgsByDevIP.keys()))
         for devIP, devArgStruct in self.classifyDownloadArgsByDevIP.items():
             inIp_count = len(devArgStruct.downloadArgList)  # 每个ip单独的下载数量
-            downloadArgsCount += inIp_count
+            self.totalDownloadCount += inIp_count
             aItem = QTableWidgetItem(str(devIP))
             aItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
             self.ui.downloadProgress_TW.setItem(row, 0, aItem)
@@ -224,7 +229,7 @@ class DVWclass(QWidget):
             aItemWidget.setMaximum(inIp_count)
             self.ui.downloadProgress_TW.setCellWidget(row, 1, aItemWidget)
             row += 1  # 换行
-        self.ui.argsCount_TL.setText(f"下载进度 (共{downloadArgsCount}个)")
+        self.ui.argsCount_TL.setText(f"下载进度-(0/{self.totalDownloadCount})")
 
         self.startDownload()
 

@@ -10,14 +10,14 @@ from typing import List
 from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
 from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, FileContentIsEmptyException, getSameYTCountTableWidgetData
 from app.esheet_process_widget.epw_define import SYTTWEnum, EDTWEnum, ExcelFileListWidgetItemDataStruct, SameYTCountTableWidgetItemDataStruct, ExcelDataTableWidgetItemDataStruct
-from app.esheet_process_widget.base_epw import Base_EPW_Widget
+from app.esheet_process_widget.base_epw import BaseEPW
 from openpyxl.utils.exceptions import InvalidFileException
 
 
 # mainwindow那边定义logger，子组件这边共用的，不过是没有独立的作用域标记了，但文件地址也能说明问题了
 
 
-class EPWclass(Base_EPW_Widget):
+class EPWclass(BaseEPW):
     showErrorMsgBox = pyqtSignal(str, str)  # 多线程函数里有个需要弹窗的步骤，需要用个信号显示
 
     def __init__(self, parent=None):

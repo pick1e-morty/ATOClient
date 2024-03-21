@@ -9,6 +9,7 @@ class PercentProgressBar(QWidget):
     可以显示百分比的进度条
     用水平Layout组合了ProgressBar和QLabel
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.layout = QHBoxLayout(self)
@@ -33,7 +34,9 @@ class PercentProgressBar(QWidget):
         return self.progressBar.value()
 
     def drawPercent(self):
-        self.percentLabel.setText(self.progressBar.text())
+        maxNum = self.progressBar.maximum()
+        value = self.progressBar.value()
+        self.percentLabel.setText(f"{value}/{maxNum}")
 
 
 if __name__ == "__main__":

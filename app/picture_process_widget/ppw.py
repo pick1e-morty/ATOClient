@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QApplication, QLabel, QScrollA
 from loguru import logger
 from qfluentwidgets import ScrollArea, PushButton
 
-from app.picture_process_widget.base_ppw import BaseFullScreenPicture
+from app.picture_process_widget.base_ppw import BasePPW
 from app.picture_process_widget.utils.tool_box import ToolsGroupBox
 from app.picture_process_widget.utils.writeable_label import WriteableLabel
 
@@ -19,7 +19,7 @@ picDirPath = Path(__file__).parent.parent.parent.parent / "pic"
 picDirPath.mkdir(exist_ok=True)
 
 
-class PPWclass(BaseFullScreenPicture):  # TODO 这个基类的名字记得统一
+class PPWclass(BasePPW):  # TODO 这个基类的名字记得统一
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("PPW_Widget")
