@@ -3,11 +3,16 @@ import sys
 import multiprocessing
 from pathlib import Path
 
+from loguru import logger
+
 sys.path.append(str(Path(__file__).absolute().parent.parent))  # 在vscode里不会自动追加项目根目录为pythonpath
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 from app.main_window.main_window import MainWindow
+
+
+logger.add(sys.stdout, level="TRACE")
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()

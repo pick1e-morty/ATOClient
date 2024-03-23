@@ -8,7 +8,7 @@ from qfluentwidgets import PushButton, ComboBox, BodyLabel, LineEdit
 
 
 class ToolsGroupBox(QGroupBox):
-    def __init__(self, picSuffixTuple,parent=None):
+    def __init__(self, picSuffixTuple, parent=None):
         super().__init__(parent)
         self.setObjectName(u"groupBox")
         self.picSuffixTuple = picSuffixTuple
@@ -132,14 +132,15 @@ class ToolsGroupBox(QGroupBox):
 
     def countingFile(self):
         dirPath = self.dirPath_CB.itemData(self.dirPath_CB.currentIndex())
-        fileList = [file for file in dirPath.iterdir() if file.is_file() and file.suffix in self.picSuffixTuple]
-
-        total = len(fileList)
-        marked = sum(1 for p in fileList if Path(p).suffix == '.jpeg')
-        unMarked = total - marked
-
-        self.counting_L.setText(f"总{total}已{marked}未{unMarked}")  # 测试阶段，后面成模式了要整合为函数
-
+        if dirPath and dirPath.exists() and dirPath.is_dir():
+            if fileList := [file for file in dirPath.iterdir() if file.is_file() and file.suffix in self.picSuffixTuple]:
+                total = len(fileList)
+                marked = sum(1 for p in fileList if Path(p).suffix == '.jpeg')
+                unMarked = total - marked
+                self.counting_L.setText(f"总{total}已{marked}未{unMarked}")  # 测试阶段，后面成模式了要整合为函数
+            else:
+                zero = "0"
+                self.counting_L.setText(f"总{zero}已{zero}未{zero}")  # 测试阶段，后面成模式了要整合为函数
 
 
 if __name__ == '__main__':

@@ -30,17 +30,14 @@ class StopDownloadHandleThread(threading.Thread):
     def __init__(self, downloadHandleDict, downloadHandleDictCondition, updateDownloadStatusFun):
         """
         downloadHandleDictCondition起到了一个lock的作用，锁的是downloadHandleDict
-        另外，如果downloadHandleDict是空的，线程休眠，不消耗资源。
+        另外，如果downloadHandleDict是空的，线程休眠，不占用资源。
 
         downloadHandleDict的key是下载句柄
         value是个列表，元素按顺序分别是savePath,文件保存地址;
-        devIP;iNDEX;设备ip和这个特殊的index都是用于定位元素所在位置用的
+        devIP,设备ip; iNDEX,特殊的index都是用于定位元素所在位置用的
         dvw窗体那边有个大的参数字典，设备ip用来定位key，拿到value后
         取downloadArgList[iNDEX],这个不用传整个大列表也能得到整个大列表
         一个是字典的key，另一个是列表元素的index
-        毕竟这个下载器和dvw是父子进程的关系，进程通信嘛
-
-        发进度统一用updateDownloadStatusFun
         """
         threading.Thread.__init__(self)
         self.producerDone = False  # 线程结束的标志
@@ -65,7 +62,10 @@ class StopDownloadHandleThread(threading.Thread):
                 stopRestlt = dahuaClient.stopDownLoadTimer(downloadHandle)
                 if stopRestlt is True:
                     savePath, iNDEX = self.downloadHandleDict[downloadHandle]
-                    tsPic(absVideoPath=savePath)
+                    try:
+                        tsPic(absVideoPath=savePath)
+                    except DHPlaySDKException as e:
+                        logger.error(f"{savePath}转换失败，错误代码{str(e)}")
                     status = "下载成功"  # 目前就实现了这么一种状态，想要其他状态就要自己写stopDownLoadTimer
                     self.updateDownloadStatusFun(iNDEX, status)
                     with self.downloadHandleDictCondition:  # 下载成功后就可以删掉这个句柄了
@@ -139,7 +139,7 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     # logger.error("下载主进程休眠5秒")
     # errorStr = "需要等5秒"
     # updateDownloadStatusFun(0, errorStr, DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE)
-    sleep(1)  # TODD  休眠5秒，然后才能正常的进行录像查找，从第一个查找失败到第四个查找成功，最短时间是5秒，我不清楚原因
+    # sleep(1)  # TODD  休眠5秒，然后才能正常的进行录像查找，从第一个查找失败到第四个查找成功，最短时间是5秒，我不清楚原因
 
     # 如果直接运行这个文件main函数，就不用做这个sleep，所以问题应该是出来了进程池上
     # sdk第一方的log提示 用json格式的参数进行查找录像失败

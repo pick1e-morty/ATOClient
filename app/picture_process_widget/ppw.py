@@ -13,10 +13,11 @@ from qfluentwidgets import ScrollArea, PushButton
 from app.picture_process_widget.base_ppw import BasePPW
 from app.picture_process_widget.utils.tool_box import ToolsGroupBox
 from app.picture_process_widget.utils.writeable_label import WriteableLabel
+from app.utils.projectPath import DVW_DOWNLOAD_VIDEO_PATH
+from app.utils.tools import removeDir
 
 # dvw下载后的图片存放地址，ppw要从这个文件夹中取子级文件夹中的图片
 picDirPath = Path(__file__).parent.parent.parent.parent / "pic"
-picDirPath.mkdir(exist_ok=True)
 
 
 class PPWclass(BasePPW):  # TODO 这个基类的名字记得统一
@@ -47,7 +48,7 @@ class PPWclass(BasePPW):  # TODO 这个基类的名字记得统一
         self.toolsGroupBox.delUnMarkImg_PB.clicked.connect(self.delUnMarkImg)
         self.toolsGroupBox.setHidden(True)  # 上面说初始化后先隐藏掉
 
-    def clear_layout(self, layout):
+    def clearPictureLabel(self, layout):
         while layout.count():
             child = layout.takeAt(0)
             if child.widget():
@@ -63,10 +64,12 @@ class PPWclass(BasePPW):  # TODO 这个基类的名字记得统一
         verScrollBarWidth = verScrollBar.width() // colNum
         new_width -= verScrollBarWidth  # 减去右边滚动条的宽度
 
-        fileList = [file for file in dirPath.iterdir() if file.is_file() and file.suffix in self.picSuffixTuple]
-        self.clear_layout(self.gridLayout_2)  # 清空图片label
-
+        self.clearPictureLabel(self.gridLayout_2)  # 清空图片label
         self.toolsGroupBox.countingFile()  # 刷一下已标记的标签显示
+        if not dirPath:  # 因为在 删除未标记图片 时，如果此操作使文件夹为空，删除未标记图片 方法就会直接删除这个文件夹及其所在dirPath_CB中的item
+            return  # 此举会导致dirPath_CB触发itemChanged，从而导致本方法addPictureLabel被触发，故作此判断。
+        fileList = [file for file in dirPath.iterdir() if file.is_file() and file.suffix in self.picSuffixTuple]
+
         self.markedImgLabel = None  # 重置标记
         for index, filePath in enumerate(fileList):
             picLabel = WriteableLabel(palette=self, filePath=filePath, parent=self.scrollAreaWidgetContents)  # 这样写应该是不符合“规定”的。
@@ -104,10 +107,12 @@ class PPWclass(BasePPW):  # TODO 这个基类的名字记得统一
                 self.toolsGroupBox.countingFile()
 
     def scanDirsAddToDirPathComboBox(self):
-        # 遍历picDirPath，只取第一级的文件夹
-        dirsPathList = [path for path in picDirPath.iterdir() if path.is_dir()]
+        # DVW_DOWNLOAD_VIDEO_PATH，只取第一级的文件夹
+        dirsPathList = [path for path in DVW_DOWNLOAD_VIDEO_PATH.iterdir() if path.is_dir()]
         # 取末级路径 .stem，作为comboBox的item文本，整体路径作为item的data
         self.toolsGroupBox.dirPath_CB.clear()
+        self.clearPictureLabel(self.gridLayout_2)  # 清空图片label
+        self.toolsGroupBox.countingFile()  # 刷新文件标记状态
         dirsPathList = sorted(dirsPathList)  # 带个顺序
         for dirPath in dirsPathList:
             stem = dirPath.stem
@@ -139,6 +144,10 @@ class PPWclass(BasePPW):  # TODO 这个基类的名字记得统一
         dirPath = self.toolsGroupBox.dirPath_CB.itemData(self.toolsGroupBox.dirPath_CB.currentIndex())  # 当前选中文件夹和列数
         if dirPath:
             [file.unlink(missing_ok=True) for file in dirPath.iterdir() if file.is_file() and file.suffix == ".jpg"]
+            if not len([file for file in dirPath.iterdir()]):  # 判断文件夹是否为空，然后删除这个文件夹的item
+                self.toolsGroupBox.dirPath_CB.removeItem(self.toolsGroupBox.dirPath_CB.currentIndex())
+                dirPath.rmdir()
+                return
             # TODO 这步查layout所有的label，遍历label的filePath属性，不在walk的新文件列表中就给removeWidget了
             self.addPictureLabel()  # 刷新，不存在的文件要删除在界面上的label。
 

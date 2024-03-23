@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1413</width>
-    <height>920</height>
+    <height>925</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,7 +26,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>下载进度</string>
+         <string>设备状态</string>
         </property>
        </widget>
       </item>
@@ -211,7 +211,34 @@
    <item row="2" column="0">
     <widget class="CardWidget" name="CardWidget_3">
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="1" column="0" colspan="3">
+      <item row="0" column="0">
+       <widget class="TitleLabel" name="TitleLabel_2">
+        <property name="text">
+         <string>文件数量</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="0" column="1">
+       <widget class="PushButton" name="convert_PB">
+        <property name="text">
+         <string>MP4转JPG</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="4">
        <widget class="TableWidget" name="fileCount_TW">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -272,32 +299,12 @@
         </column>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="TitleLabel" name="TitleLabel_2">
+      <item row="0" column="3">
+       <widget class="PushButton" name="deleteAllFile_PB">
         <property name="text">
-         <string>文件数量</string>
+         <string>删除所有文件</string>
         </property>
        </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="PushButton" name="convert_PB">
-        <property name="text">
-         <string>MP4转JPG</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <spacer name="horizontalSpacer_3">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
       </item>
      </layout>
     </widget>
@@ -312,7 +319,7 @@
      </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
-       <widget class="TitleLabel" name="argsCount_TL_2">
+       <widget class="TitleLabel" name="downloadStatus_TL">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -320,7 +327,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>详细下载状态</string>
+         <string>下载状态</string>
         </property>
        </widget>
       </item>

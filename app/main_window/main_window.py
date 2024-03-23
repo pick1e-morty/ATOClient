@@ -88,6 +88,10 @@ class MainWindow(BaseMainWindow):
         else:
             # 隐藏toolsGroupBox
             self.ppwInterface.toolsGroupBox.setHidden(True)
+        if widget == self.dvwInterface:
+            self.dvwInterface.closeTheDoorAndreleaseTheDog()  # 持续刷新 文件数量 表格组件。会立即扫描一次pic及其子级文件中的文件数量
+        else:
+            self.dvwInterface.openTheDoorAndCollectTheDog()  # 停止刷新
 
     def dvw_startDownLoad_PB_clicked(self):
         # 当 下载页面 中的 开始下载按钮 被点击时，触发这个函数
@@ -99,7 +103,7 @@ class MainWindow(BaseMainWindow):
             if excelFile_LW_ItemData.edtw_ItemDataList:  # 判断列表组件中的数据是否为空
                 excelFileListWidgetItemDataStructList.append(excelFile_LW_ItemData)
         if excelFileListWidgetItemDataStructList:
-            self.dvwInterface.addDownloadList(excelFileListWidgetItemDataStructList)
+            self.dvwInterface.handleDownloadList(excelFileListWidgetItemDataStructList)
 
 
 if __name__ == '__main__':

@@ -33,7 +33,7 @@ class BasePPW(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    form = BaseFullScreenPicture()
+    form = BasePPW()
     form.show()
 
     screen_resolution = QApplication.desktop().screenGeometry()

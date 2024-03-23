@@ -22,6 +22,7 @@ class PercentProgressBar(QWidget):
 
     def setMaximum(self, value):
         self.progressBar.setMaximum(value)
+        self.drawPercent()  # 手动绘制一次
 
     def setValue(self, value):
         self.progressBar.setValue(value)
@@ -34,6 +35,7 @@ class PercentProgressBar(QWidget):
         return self.progressBar.value()
 
     def drawPercent(self):
+        # 只有改变value的时候才会被自动触发。如果是其他情况，比如设置最大数值就需要手动触发一下
         maxNum = self.progressBar.maximum()
         value = self.progressBar.value()
         self.percentLabel.setText(f"{value}/{maxNum}")

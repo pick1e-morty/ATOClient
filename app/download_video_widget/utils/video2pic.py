@@ -4,7 +4,7 @@ from pathlib import Path
 from UnifyNetSDK import DaHuaPlaySDK
 
 
-def tsPic(absVideoPath: str, absPicPath: str = None):
+def tsPic(absVideoPath: [str, Path], absPicPath: str = None):
     """
     从视频中截取一张图片,保存到指定路径.
     :param absVideoPath: 视频绝对路径

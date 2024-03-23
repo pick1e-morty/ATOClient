@@ -65,7 +65,10 @@ class StopDownloadHandleThread(threading.Thread):
                 stopRestlt = haikangClient.stopDownLoadTimer(downloadHandle)
                 if stopRestlt == 100:
                     savePath, iNDEX = self.downloadHandleDict[downloadHandle]
-                    tsPic(absVideoPath=savePath)
+                    try:
+                        tsPic(absVideoPath=savePath)
+                    except DHPlaySDKException as e:
+                        logger.error(f"{savePath}转换失败，错误代码{str(e)}")
                     status = "下载成功"  # 目前就实现了这么一种状态，想要其他状态就要自己写stopDownLoadTimer
                     self.updateDownloadStatusFun(iNDEX, status)
                     with self.downloadHandleDictCondition:  # 下载成功后就可以删掉这个句柄了
