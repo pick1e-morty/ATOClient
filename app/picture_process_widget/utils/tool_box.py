@@ -131,6 +131,7 @@ class ToolsGroupBox(QGroupBox):
         self.color_CB.setCurrentIndex(0)
 
     def countingFile(self):
+        zero = "0"
         dirPath = self.dirPath_CB.itemData(self.dirPath_CB.currentIndex())
         if dirPath and dirPath.exists() and dirPath.is_dir():
             if fileList := [file for file in dirPath.iterdir() if file.is_file() and file.suffix in self.picSuffixTuple]:
@@ -139,8 +140,9 @@ class ToolsGroupBox(QGroupBox):
                 unMarked = total - marked
                 self.counting_L.setText(f"总{total}已{marked}未{unMarked}")  # 测试阶段，后面成模式了要整合为函数
             else:
-                zero = "0"
                 self.counting_L.setText(f"总{zero}已{zero}未{zero}")  # 测试阶段，后面成模式了要整合为函数
+        else:
+            self.counting_L.setText(f"总{zero}已{zero}未{zero}")  # 测试阶段，后面成模式了要整合为函数
 
 
 if __name__ == '__main__':

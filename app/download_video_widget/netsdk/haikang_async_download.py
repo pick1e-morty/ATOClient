@@ -5,14 +5,14 @@ from datetime import timedelta
 from pathlib import Path
 from time import sleep
 
-from UnifyNetSDK import HaikangNetSDK
+from UnifyNetSDK import HaikangNetSDK, DHPlaySDKException
 from UnifyNetSDK.haikang.hk_netsdk_exception import HKNetSDKException
 from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg, UnifyFindFileByTimeArg
 
 from loguru import logger
 
 from app.download_video_widget.utils.video2pic import tsPic
-from app.download_video_widget.dvw_define import DevLoginAndDownloadArgSturct, DVWTableWidgetEnum
+from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
 
 logger.remove()
 logger.add(sys.stdout, level="TRACE")
@@ -82,7 +82,7 @@ class StopDownloadHandleThread(threading.Thread):
             sleep(0.5)
 
 
-def HaikangDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgSturct):
+def HaikangDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgStruct):
     # 参数还要加，是否查找录像，日志保存地址，
 
     deviceAddress = None  # 记录下整个py文件内没有变化的ip地址，这样就不用每次都传了
@@ -99,7 +99,7 @@ def HaikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
         with downloadResultListCondition:
             downloadResultListCondition.notify()
 
-    def execute_operation(func, funcArgs, sucessText, errorText, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
+    def execute_operation(func, funcArgs, sucessText, errorText, needExit=True, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
         # 目前都是执行的sdk的方法，且上报状态也都是发给下载进度表格的
         try:
             executeResult = func(*funcArgs)
@@ -110,7 +110,8 @@ def HaikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
             logger.error(f"{deviceAddress}{errorText},{e}")
             errorStr = str(e) + errorText
             updateDownloadStatusFun(0, errorStr, widgetEnum)
-            sys.exit(1)
+            if needExit:
+                sys.exit(1)  # 有些方法执行后还不能立即退出。不过这个判断也很可能用不上
 
     global haikangClient  # sdkClient的全局变量是避免不掉的
 
@@ -121,18 +122,28 @@ def HaikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
     easy_login_info.deviceAddress = deviceAddress = devArgs.devIP  # 先做取deviceAddress，因为下面的init也要以设备ip地址做报错根源参照
 
     curFilePath = Path(__file__).parent
-    haikangClient = HaikangNetSDK()      # 这个改动只能在打包后才能成功运行，直接解释器运行是失败的
+    haikangClient = HaikangNetSDK()  # 这个改动只能在打包后才能成功运行，直接解释器运行是失败的
     execute_operation(haikangClient.init, [], "初始化成功", "初始化失败")
     absLogPath = Path(__file__).absolute().parent.parent.parent
     absLogPath = absLogPath.joinpath("hk_netsdk_log")  # TODO 打包阶段时要将log统一对齐到rootPath/log文件夹下
     logger.info(f"海康netsdk的log地址为{str(absLogPath)}")
     execute_operation(haikangClient.logopen, [str(absLogPath)], "打开日志成功", "打开日志失败")
 
-    userID, device_info = execute_operation(haikangClient.login, [easy_login_info], "登录成功", "登录失败")
-    # if userID == 0:
-    #     logger.error("登录失败")
-    #     sys.exit(1)
-    print("硬盘数量", device_info.struDeviceV30.byDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
+    try:
+        userID, device_info = haikangClient.login(easy_login_info)
+        sucessText = "登录成功"
+        logger.info(f"{deviceAddress}{sucessText}")
+        updateDownloadStatusFun(0, sucessText, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE)
+    except HKNetSDKException as e:
+        errorText = "登录失败"
+        logger.error(f"{deviceAddress}{errorText},{e}")
+        errorStr = str(e) + errorText
+        updateDownloadStatusFun(0, errorStr, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE)
+        haikangClient.logclose()  # 这次就不上报了
+        haikangClient.cleanup()
+        sys.exit(1)  # stopDownloadThread线程还没开，所以不用管
+
+    logger.trace("登录成功的测试，打印硬盘数量", device_info.struDeviceV30.byDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
 
     downloadHandleDict = {}  # key是下载句柄，value是downloadArg.savePath，下载地址。iNDEX,下载参数在列表中的索引
     downloadHandleDictCondition = threading.Condition()  # 下载句柄字典的锁，线程安全

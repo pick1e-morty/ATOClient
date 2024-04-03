@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 from app.main_window.main_window import MainWindow
 
-
+logger.remove()
 logger.add(sys.stdout, level="TRACE")
 
 if __name__ == '__main__':
@@ -26,10 +26,10 @@ if __name__ == '__main__':
     forms.stackWidget.setCurrentIndex(1)
 
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
-    testFile = os.path.join(__desktopPath, "0306.xlsx")
-    __filePath2 = os.path.join(__desktopPath, "0307.xlsx")
+    testFile = os.path.join(__desktopPath, "0314.xlsx")
+    __filePath2 = os.path.join(__desktopPath, "test.xlsx")
     # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
-    # forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
+    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile])
 
     app.exec_()
 

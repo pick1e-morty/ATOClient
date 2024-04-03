@@ -25,26 +25,31 @@ class BaseDVW(QWidget):
         self.bigDog = QFileSystemWatcher()  # 因为业务逻辑繁杂，故使用两个QFileSystemWatcher以保证槽函数代码逻辑简单通顺
         self.bigDog.directoryChanged.connect(self.doBigDogShouldDo)  # 大狗只负责监控pic文件夹中有多少个子级文件夹
         self.smallDog = QFileSystemWatcher()
-        self.smallDog.directoryChanged.connect(self.doSmallDogShouldDo)  # 小狗负责监测文件夹中的文件数量
-        self.subDirs = set()  # 保存上一轮的pic子级文件夹，集合
+        self.smallDog.directoryChanged.connect(self.doSmallDogShouldDo)  # 小狗负责监测各子级文件夹中的文件数量
+        self.subDirs = set()  # 保存上一轮的pic子级文件夹。集合类型
+        self.watcherIswatch = False  # 判断两只小狗是否已经进入状态，避免重复添加
 
     def closeTheDoorAndreleaseTheDog(self):
         # 关门放狗，添加pic路径，并激活一次大狗的槽函数
-        logger.trace("开启bigDog和smallDog的文件夹监视")
-        self.ui.fileCount_TW.clearContents()
-        self.ui.fileCount_TW.setRowCount(0)  # 清空表格数据
-        QApplication.processEvents()  # 上一步需要立即执行。不然会被qt的事件机制给合并掉，会影响后续代码的判断
-        self.bigDog.addPath(str(DVW_DOWNLOAD_VIDEO_PATH))
-        self.doBigDogShouldDo(str(DVW_DOWNLOAD_VIDEO_PATH))
+        if not self.watcherIswatch:
+            logger.trace("开启bigDog和smallDog的文件夹监视")
+            self.ui.fileCount_TW.clearContents()
+            self.ui.fileCount_TW.setRowCount(0)  # 清空表格数据
+            QApplication.processEvents()  # 上一步需要立即执行。不然会被qt的事件机制给合并掉，会影响后续代码的判断
+            self.bigDog.addPath(str(DVW_DOWNLOAD_VIDEO_PATH))
+            self.doBigDogShouldDo(str(DVW_DOWNLOAD_VIDEO_PATH))
+            self.watcherIswatch = True
 
     def openTheDoorAndCollectTheDog(self):
         # 开门收狗，停止两个监视的工作，清空表格及初始化其他相关变量。
-        self.bigDog.removePaths(self.bigDog.directories())  # 删除pic根目录的监视
-        self.smallDog.removePaths(self.smallDog.directories())  # 删除pic下的子级目录的监视
-        self.ui.fileCount_TW.clearContents()
-        self.ui.fileCount_TW.setRowCount(0)
-        self.subDirs = set()
-        logger.trace("已停止bigDog和smallDog的文件夹监视")
+        if self.watcherIswatch:
+            self.bigDog.removePaths(self.bigDog.directories())  # 删除pic根目录的监视
+            self.smallDog.removePaths(self.smallDog.directories())  # 删除pic下的子级目录的监视
+            self.ui.fileCount_TW.clearContents()
+            self.ui.fileCount_TW.setRowCount(0)
+            self.subDirs = set()
+            logger.trace("已停止bigDog和smallDog的文件夹监视")
+            self.watcherIswatch = False
 
     def doBigDogShouldDo(self, pathChanged):
         curSubDir = {pathObject for pathObject in Path(pathChanged).iterdir() if pathObject.is_dir()}  # 遍历pic路径下有多少个子级文件夹
@@ -81,6 +86,8 @@ class BaseDVW(QWidget):
         if not isRowExist:
             dirNameItem = AlignCenterQTableWidgetItem(str(dirName))  # 文件夹名称
             self.ui.fileCount_TW.setItem(row, 0, dirNameItem)
+            expectDownloadNumItem = AlignCenterQTableWidgetItem(str("已存在"))  # 预计下载数量
+            self.ui.fileCount_TW.setItem(row, 1, expectDownloadNumItem)
 
         # 预计文件数量那行不用动，col指定为0，2，3
         jpg_Item = AlignCenterQTableWidgetItem(str(jpgFileCount))  # jpg文件数量

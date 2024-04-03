@@ -5,17 +5,14 @@ from datetime import timedelta
 from pathlib import Path
 from time import sleep
 
-from UnifyNetSDK import DaHuaNetSDK
+from UnifyNetSDK import DaHuaNetSDK, DHPlaySDKException
 from UnifyNetSDK.dahua.dh_netsdk_exception import DHNetSDKException  # TODO 这个地方的导入应该是有办法统一一下的
 from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg, UnifyFindFileByTimeArg
 
 from loguru import logger
 
 from app.download_video_widget.utils.video2pic import tsPic
-from app.download_video_widget.dvw_define import DevLoginAndDownloadArgSturct, DVWTableWidgetEnum
-
-logger.remove()
-logger.add(sys.stdout, level="INFO")
+from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
 
 dahuaClient = None
 
@@ -78,7 +75,7 @@ class StopDownloadHandleThread(threading.Thread):
             sleep(0.5)
 
 
-def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgSturct):
+def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgStruct):
     # 参数还要加，是否查找录像，日志保存地址，
 
     deviceAddress = None  # 记录下整个py文件内没有变化的ip地址，这样就不用每次都传了
@@ -92,10 +89,11 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
         """
 
         downloadResultList.append([widgetEnum, deviceAddress, f_iNDEX, f_status])
-        with downloadResultListCondition:
+        logger.trace(f"{widgetEnum}更新状态：{deviceAddress} {f_iNDEX} {f_status}")  # TODO UI那边又出现上报数量不对等的情况，不知道是关闭句柄线程的问题还是什么
+        with downloadResultListCondition:  # 用这个log应该就能查清楚了
             downloadResultListCondition.notify()
 
-    def execute_operation(func, funcArgs, sucessText, errorText, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
+    def execute_operation(func, funcArgs, sucessText, errorText, needExit=True, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
         # TDOO 就是这里，改造为装饰器，一般情况下只需要传两个参数就好了
         # 目前都是执行的sdk的方法，且上报状态也都是发给下载进度表格的
         try:
@@ -107,7 +105,8 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
             logger.error(f"{deviceAddress}{errorText},{e}")
             errorStr = str(e) + errorText
             updateDownloadStatusFun(0, errorStr, widgetEnum)
-            sys.exit(1)
+            if needExit:
+                sys.exit(1)  # 有些方法执行后还不能立即退出。不过这个判断也很可能用不上
 
     global dahuaClient  # sdkClient的全局变量是避免不掉的
 
@@ -124,22 +123,27 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     logger.info(f"大华netsdk的log地址为{str(absLogPath)}")
     execute_operation(dahuaClient.logopen, [str(absLogPath)], "打开日志成功", "打开日志失败")
 
-    userID, device_info = execute_operation(dahuaClient.login, [easy_login_info], "登录成功", "登录失败")
-    # if userID == 0:
-    #     logger.error("登录失败")
-    #     sys.exit(1)
-    print("硬盘数量", device_info.stuDeviceInfo.nDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
+    try:
+        userID, device_info = dahuaClient.login(easy_login_info)
+        sucessText = "登录成功"
+        logger.info(f"{deviceAddress}{sucessText}")
+        updateDownloadStatusFun(0, sucessText, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE)
+    except DHNetSDKException as e:
+        errorText = "登录失败"
+        logger.error(f"{deviceAddress}{errorText},{e}")
+        errorStr = str(e) + errorText
+        updateDownloadStatusFun(0, errorStr, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE)
+        dahuaClient.logclose()  # 这次就不上报了
+        dahuaClient.cleanup()
+        sys.exit(1)  # stopDownloadThread线程还没开，所以不用管
+
+    logger.trace("登录成功的测试，打印硬盘数量", device_info.stuDeviceInfo.nDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
 
     downloadHandleDict = {}  # key是下载句柄，value是downloadArg.savePath，下载地址。iNDEX,下载参数在列表中的索引
     downloadHandleDictCondition = threading.Condition()  # 下载句柄字典的锁，线程安全
     stopDownloadThreadInstance = StopDownloadHandleThread(downloadHandleDict, downloadHandleDictCondition, updateDownloadStatusFun)
     stopDownloadThreadInstance.setName(str(devArgs.devIP))  # 给线程加个名字(以IP为单位)，查错的时候方便点
     stopDownloadThreadInstance.start()
-
-    # logger.error("下载主进程休眠5秒")
-    # errorStr = "需要等5秒"
-    # updateDownloadStatusFun(0, errorStr, DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE)
-    # sleep(1)  # TODD  休眠5秒，然后才能正常的进行录像查找，从第一个查找失败到第四个查找成功，最短时间是5秒，我不清楚原因
 
     # 如果直接运行这个文件main函数，就不用做这个sleep，所以问题应该是出来了进程池上
     # sdk第一方的log提示 用json格式的参数进行查找录像失败

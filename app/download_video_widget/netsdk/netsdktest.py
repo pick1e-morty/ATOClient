@@ -12,7 +12,7 @@ from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg, UnifyFi
 from loguru import logger
 
 from app.download_video_widget.utils.video2pic import tsPic
-from app.download_video_widget.dvw_define import DevLoginAndDownloadArgSturct, DVWTableWidgetEnum
+from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
 
 logger.remove()
 logger.add(sys.stdout, level="INFO")
@@ -78,7 +78,7 @@ class StopDownloadHandleThread(threading.Thread):
             sleep(0.5)
 
 
-def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgSturct):
+def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgStruct):
     # 参数还要加，是否查找录像，日志保存地址，
 
     deviceAddress = None  # 记录下整个py文件内没有变化的ip地址，这样就不用每次都传了

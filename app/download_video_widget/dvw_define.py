@@ -13,7 +13,7 @@ class DownloadArg(object):
         self.downloadTime = downloadTime
 
 
-class DevLoginAndDownloadArgSturct(object):
+class DevLoginAndDownloadArgStruct(object):
     __slots__ = ['devType', 'devIP', 'devPort', 'devUserName', 'devPassword', 'downloadArgList']
 
     def __init__(self):
@@ -23,6 +23,17 @@ class DevLoginAndDownloadArgSturct(object):
         self.devUserName = None  # 用户名
         self.devPassword = None  # 密码
         self.downloadArgList = []  # 下载参数列表，元素是DownloadArg组成的
+
+    def copy_from(self, other, keepDownloadArgListEmpty=True):
+        self.devType = other.devType
+        self.devIP = other.devIP
+        self.devPort = other.devPort
+        self.devUserName = other.devUserName
+        self.devPassword = other.devPassword
+        if keepDownloadArgListEmpty:
+            self.downloadArgList = []
+        else:
+            self.downloadArgList = other.downloadArgList.copy()
 
 
 class DVWTableWidgetEnum(Enum):

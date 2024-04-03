@@ -54,7 +54,13 @@ class EPWclass(BaseEPW):
         # 但curItem, preItem确实改变了，而excelFilePath又没有放到界面上
         # 所以需要一些稍微“另类”的方法来获取到这个excelFilePath
         # 更加符合直觉的方法应该是QAbstractItemView.selectionChanged(selected, deselected)
-        excelFilePath = self.get_FilePathInExcelFile_LW_ItemData()
+        # excelFilePath = self.get_FilePathInExcelFile_LW_ItemData()
+        excelFilePath = self.ui.excelFile_LW.currentItem().data(Qt.UserRole).excelFilePath
+
+        # TODO 这个破文件地址还是不对
+
+
+
         excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 创建excelFile_LW_ItemDataStruct对象
         excelFile_LW_ItemData.edtw_ItemDataList = in_edtw_ItemDataList
         excelFile_LW_ItemData.sytctw_ItemDataList = in_sytctw_ItemDataList
@@ -257,7 +263,7 @@ class EPWclass(BaseEPW):
     def showMessageBox(self, title, text):  # 多线程函数里有个需要弹窗的步骤，需要用个槽函数来显示
         MessageBox(title, text, self).show()  # 主题作者不知道设置了什么，就算不用exec_也可以屏蔽用户对界面的操作，而不用阻塞事件循环，很棒!
 
-    def getInexcelFile_LWaddedAppointFileAdress(self, fileName: str) -> str:    # 没用上
+    def getInexcelFile_LWaddedAppointFileAdress(self, fileName: str) -> str:  # 没用上
         # 获取在excelFile_LW组件中已经添加过的指定的文件地址
         FindedItem = self.ui.excelFile_LW.findItems(fileName, Qt.MatchExactly)
         excelFile_LW_ItemData = FindedItem[0].data(Qt.UserRole)

@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import (QApplication, QWidget, QTableWidgetItem)
 from typing import List
 
-from UnifyNetSDK import DHPlaySDKException
+from UnifyNetSDK.dahua.dh_playsdk_exception import DHPlaySDKException
 from qfluentwidgets import MessageBox
 
 from app.download_video_widget.base_dvw import BaseDVW
@@ -20,7 +20,7 @@ from app.download_video_widget.utils.progress_bar import PercentProgressBar
 from app.download_video_widget.netsdk.dahua_async_download import dahuaDownloader
 from app.download_video_widget.utils.video2pic import tsPic
 from app.esheet_process_widget.epw_define import ExcelFileListWidgetItemDataStruct
-from app.download_video_widget.dvw_define import DownloadArg, DevLoginAndDownloadArgSturct, DVWTableWidgetEnum
+from app.download_video_widget.dvw_define import DownloadArg, DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
 from loguru import logger
 from app.utils.projectPath import DVW_DOWNLOAD_FILE_SUFFIX, DVW_CONVERTED_FILE_SUFFIX, DVW_DATETIME_FORMAT, DVW_DOWNLOAD_VIDEO_PATH
 from app.utils.tools import findItemTextInTableWidgetRow, AlignCenterQTableWidgetItem, removeDir
@@ -47,7 +47,11 @@ class DVWclass(BaseDVW):
 
         self.classifyDownloadArgsByDevIP = {}  # 把下载参数按照ip分类，因为最终下载时是以ip为单位的
         self.downloadErrorArgs = {}  # 收集下载错误的下载参数，和classifyDownloadArgsByDevIP是相同结构的
-        self.beforeDownloadErrorFlag = ["初始化失败", "登陆失败"]  # 如果子进程上报的设备状态在这个列表中就表明设备登陆失败了，就需要把整个key_ip中的downloadArgs_value都加到self.downloadErrorArgs中
+        self.classifyDownloadArgsIndexByFolder = {}  # 将classifyDownloadArgsByDevIP按照文件夹分类，
+
+        # self.beforeDownloadErrorFlag = ["初始化失败", "登陆失败"]
+        # 如果子进程上报的设备状态在这个列表中就表明设备登陆失败了，就需要把整个key_ip中的downloadArgs_value都加到self.downloadErrorArgs中
+        # 这个想法很不错，不过dvrSDK有太多不可控的情况发生，以我目前的能力无法准确无误的识别SDK的错误，在这个分支里这个方法被弃用了
         self.manager: multiprocessing.Manager = None  # 进程通信对象管理器
         self.downloadResultList: ListProxy = None  # 从manager拿的进程通信列表对象，它的方法定义在multiprocess.managers.BaseListProxy
         self.downloadResultListCondition: ConditionProxy = None  # 负责downloadResultList的进程安全同步和非空任务事件通知
@@ -73,16 +77,14 @@ class DVWclass(BaseDVW):
             for edtw_ItemData in eflw_ItemData.edtw_ItemDataList:
                 fileName = (str(edtw_ItemData.shipID) + DVW_DOWNLOAD_FILE_SUFFIX)  # 单号加统一的文件后缀名mp4
                 filePath = str(DVW_DOWNLOAD_VIDEO_PATH / folderName / fileName)
-
                 scanTime = datetime.strptime(str(edtw_ItemData.scanTime), DVW_DATETIME_FORMAT)  # 上层传来的时间数值是str类型的
-
                 v_ytName = edtw_ItemData.ytName
                 devConfig = self.devConfigGenerate.send(v_ytName)  # 传月台名，拿对应的设备配置数据类实例
                 if devConfig is None:  # 只有能拿到配置的月台才会进行后续处理
                     continue  # 且是必须存在的，所以未配置月台的筛选过程就放到dvw这边了
                 devArgStruct = isDevIpExist = self.classifyDownloadArgsByDevIP.get(devConfig.devIP, None)
                 if isDevIpExist is None:  # 我存了两个变量名
-                    devArgStruct = DevLoginAndDownloadArgSturct()  # 一个用来判断，一个用来指向数据结构
+                    devArgStruct = DevLoginAndDownloadArgStruct()  # 一个用来判断，一个用来指向数据结构
                     devArgStruct.devType = devConfig.devType  # 如果数据类实例不存在，就新建一个，然后指向这个数据类实例
                     devArgStruct.devIP = devConfig.devIP
                     devArgStruct.devPort = devConfig.devPort
@@ -93,6 +95,23 @@ class DVWclass(BaseDVW):
                 downloadArg = DownloadArg(savePath=filePath, downloadTime=scanTime, ytName=v_ytName, channel=v_channel)  # 月台名和通道是冗余的存储，但不这么写的话，解析和存储的复杂度
                 devArgStruct.downloadArgList.append(downloadArg)  # 如果数据类实例存在，那就直接改呗
                 self.classifyDownloadArgsByDevIP[devConfig.devIP] = devArgStruct  # 这里重新改一下字典的value，应该也不算什么大事，不然就得写重复代码了
+
+        self.classifyDownloadArgsIndexByFolder = {}  # # 将classifyDownloadArgsByDevIP按照文件夹分类，不复制下载参数，而是取下载参数在classifyDownloadArgsByDevIP中的索引
+        for devIP, devArgStruct in self.classifyDownloadArgsByDevIP.items():
+            for downloadArgIndex, downloadArg in enumerate(devArgStruct.downloadArgList):
+                savePath = Path(downloadArg.savePath)
+                folderName = str(savePath.parent.stem)  # 获取文件夹名称
+                fileName = str(savePath.stem)  # 获取文件名称
+                dirDict = self.classifyDownloadArgsIndexByFolder.get(folderName, {})  # 尝试取出已有的 文件夹字典
+                dirDict[fileName] = [devIP, downloadArgIndex]  # 这一步就已经把同文件夹下的相同单号给过滤掉了，但如果其他参数不相同就很头疼了，比如一个单号有两次三超的扫描时间记录
+                self.classifyDownloadArgsIndexByFolder[folderName] = dirDict
+        """
+        {   # classifyDownloadArgsIndexByFolder结构示例
+            '0318': {'shipID': ['10.10.10.11', 6], 'shipID': ['10.10.10.12', 23]},
+            '0320': {'shipID': ['10.10.10.12', 7]},
+            '0313': {'shipID': ['10.10.10.13', 1]}
+        }
+        """
 
     def getDownloadResultThread(self):
         """
@@ -121,7 +140,7 @@ class DVWclass(BaseDVW):
         """
         widgetEnum, key_devIP, downloadArgList_index, downloadStatus = resultList  # 子进程那边发来一个列表内含四个元素，依次为要操作的组件枚举，设备ip，下载参数索引，上报状态
         try:  # 这样很聪明，避免了进程通信大数据的耗时传递
-            devArgStruct = self.classifyDownloadArgsByDevIP.get(key_devIP)  # 按照ip拿DevLoginAndDownloadArgSturct
+            devArgStruct = self.classifyDownloadArgsByDevIP.get(key_devIP)  # 按照ip拿DevLoginAndDownloadArgStruct
             downloadArg = devArgStruct.downloadArgList[downloadArgList_index]  # 在按照索引取出其他需要显示的数据
         except KeyError:
             logText = f"意外情况,子进程下载器那边传回来一个在classifyDownloadArgsByDevIP中查不到的设备ip{key_devIP},下载参数列表索引{downloadArgList_index},下载状态{downloadStatus}"
@@ -151,26 +170,9 @@ class DVWclass(BaseDVW):
                 progressItemWidget.addOne()
                 self.downloadedCount += 1
                 self.ui.downloadStatus_TL.setText(f"下载进度-({self.downloadedCount}/{self.totalDownloadCount})")
-            else:  # downloadStatus != "下载成功"
-                self.downloadErrorArgs[key_devIP] = downloadArg  # 收集下载错误的下载参数
-                __tableWidget = self.ui.downloadError_TW  # 太长了，缩短一下
-                row, isRowExist = findItemTextInTableWidgetRow(self.ui.downloadError_TW, str(key_devIP))  # 查找 对应行 是否已存在
-                if isRowExist:
-                    errorNumItem = __tableWidget.item(row, 1)  # 行已经存在
-                    errorNum = int(errorNumItem.text()) + 1
-                    __tableWidget.setItem(row, 1, errorNum)  # 错误数量加1，更新错误数量列的数据
-                else:
-                    devIP_Item = AlignCenterQTableWidgetItem(str(key_devIP))  # 行不存在，初始化两列数据
-                    __tableWidget.setItem(row, 0, devIP_Item)  # 文件夹名称
-                    errorNum = 1
-                    errorNum_Item = AlignCenterQTableWidgetItem(str(errorNum))
-                    __tableWidget.setItem(row, 1, errorNum_Item)  # 错误数量
 
         elif widgetEnum == DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE:
             deviceStatus = downloadStatus
-            if deviceStatus in self.beforeDownloadErrorFlag:  # 如果子进程上报的设备状态在这个列表中就表明设备登陆失败了，
-                self.downloadErrorArgs[key_devIP] = devArgStruct  # 就需要把整个key_ip中的downloadArgs_value都加到self.downloadErrorArgs中
-
             # 把deviceStatus放到 downloadProgress_TW 的第三列上
             aItem = AlignCenterQTableWidgetItem(str(deviceStatus))
             self.ui.downloadProgress_TW.setItem(rowIndexIndownloadProgress_TW, 2, aItem)
@@ -179,19 +181,18 @@ class DVWclass(BaseDVW):
         self.ui.downloadProgress_TW.resizeColumnsToContents()  # 调整列宽
         self.ui.downloadProgress_TW.updateSelectedRows()  # 刷新主题显示状态
 
-    def startDownloadThread(self):
+    def startDownloadThread(self, downloadArgs):
         """
         负责开启进程池的线程，最大进程数量要做参数化的(UI那边要限制最多是cpu_count个)
         """
 
-        ipNum = len(self.classifyDownloadArgsByDevIP.keys())
+        ipNum = len(downloadArgs.keys())
         if ipNum >= 8:
             maxWorkers = 8  # 大于8个ip就开8个进程池，不然就开对应数量的就好了
         else:
             maxWorkers = ipNum
-
         with ProcessPoolExecutor(max_workers=maxWorkers) as executor:
-            for devIP, devArgStruct in self.classifyDownloadArgsByDevIP.items():
+            for devIP, devArgStruct in downloadArgs.items():
                 if devArgStruct.devType == "dahua":
                     executor.submit(dahuaDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
                 elif devArgStruct.devType == "haikang":
@@ -209,10 +210,15 @@ class DVWclass(BaseDVW):
         self.manager.shutdown()  # 上面关完了，管理器也需要关
         logger.info("multiprocessing.Manager已关闭")
 
+        logger.info("自动执行一次mp4转jpg程序")
+        self.on_convert_PB_clicked()  # 自动执行一次mp4转jpg
+        logger.info("开始收集下载失败的文件信息")
+        self.afterDownload()  # 这是下载步骤结束后要做的操作，最核心的功能是核对下载文件数量是否匹配
+
     def handleDownloadList(self, eflw_ItemDataList: List[ExcelFileListWidgetItemDataStruct]):
         # 点击开始下载按钮后的第一个执行的方法
         self.classifyArg(eflw_ItemDataList)
-        self.beforeDownload(self.classifyDownloadArgsByDevIP)
+        # self.beforeDownload(self.classifyDownloadArgsByDevIP)  # 其实这一步里就已经开始下载了
 
     def beforeDownload(self, downloadArgs):
         # 分类之后填充几个组件     显示下载总量
@@ -220,7 +226,6 @@ class DVWclass(BaseDVW):
         self.ui.downloadProgress_TW.setRowCount(0)
         self.ui.downloadStatus_TW.clearContents()
         self.ui.downloadStatus_TW.setRowCount(0)
-        self.downloadErrorArgs = {}  # 收集下载错误的下载参数，和classifyDownloadArgsByDevIP是相同结构的
         self.downloadedCount = 0  # 下载成功的数量，初始化
         self.totalDownloadCount = 0  # 所有ip加一块的下载总量
         self.ipRowIndexIndownloadProgress_TW = {}  # 这个变量是用来存储ip所在行的索引的，用来更新进度条的
@@ -257,7 +262,7 @@ class DVWclass(BaseDVW):
         self.downloadDone = False  # 初始化线程关闭标志
         self.getDownloadResultThreadInstance = threading.Thread(target=self.getDownloadResultThread)  #
         self.getDownloadResultThreadInstance.start()
-        self.startDownloadThreadInstance = threading.Thread(target=self.startDownloadThread)  #
+        self.startDownloadThreadInstance = threading.Thread(target=self.startDownloadThread, args=[downloadArgs, ])  #
         self.startDownloadThreadInstance.start()
 
     @pyqtSlot()
@@ -287,6 +292,62 @@ class DVWclass(BaseDVW):
         errorMsgBox.yesButton.setText('确定')
         errorMsgBox.cancelButton.setText('取消')
         errorMsgBox.exec()
+
+    def afterDownload(self):
+        self.downloadErrorArgs = {}  # 收集下载错误的下载参数，和classifyDownloadArgsByDevIP是相同结构的
+        # 下载完成后执行的方法，
+        # localDirsList和classifyDownloadArgsIndexByFolder是相同的结构，不过它的dirDict[fileName]的内容是个空列表
+        # 如果localDirsList含有classifyDownloadArgsIndexByFolder中相同fileName就表示这个文件下载成功了，需要想办法在classifyDownloadArgsIndexByFolder中移除这个fileName
+        # 如果不含有这个fileName就表示这个文件下载失败了，需要保留相关参数以供后期进行重新下载
+        localDirsDict = {}
+        for first_level_dir in Path(DVW_DOWNLOAD_VIDEO_PATH).iterdir():
+            if not first_level_dir.is_dir():
+                continue
+            for second_level_file in first_level_dir.iterdir():  # 遍历日期目录下的文件夹
+                if second_level_file.is_file() and second_level_file.suffix == DVW_CONVERTED_FILE_SUFFIX:  # 只有文件且后缀为.jpg才算下载成功（我会在统计前做一个mp4转jpg的操作，程序走到这还是存在mp4文件的话就说明这个mp4文件有问题（转换失败），那就的重新下载了）
+                    folderName = first_level_dir.stem  # 文件夹名称
+                    fileName = second_level_file.stem  # 文件名称
+                    dirDict = localDirsDict.get(folderName, {})  # 尝试取出已有的 文件夹字典
+                    dirDict[fileName] = []
+                    localDirsDict[folderName] = dirDict
+
+        # 上面取本地数据，下面对比内存数据
+        for folderName, folderContent in localDirsDict.items():
+            if folderName not in self.classifyDownloadArgsIndexByFolder:
+                continue  # 跳过classifyDownloadArgsIndexByFolder中不存在的文件夹。
+            for fileName in list(folderContent.keys()):  # 在指定文件夹中删除指定的文件名索引
+                if fileName in self.classifyDownloadArgsIndexByFolder[folderName]:  # 检查文件名是否在该文件夹的分类下载参数索引中
+                    del self.classifyDownloadArgsIndexByFolder[folderName][fileName]  # 如果是，则从索引中删除该文件名
+        # 移除所有内容为空的文件夹
+        self.classifyDownloadArgsIndexByFolder = {folder: content for folder, content in self.classifyDownloadArgsIndexByFolder.items() if content}
+
+        # 第三步，把self.classifyDownloadArgsIndexByFolder按照ip分类并写入到self.downloadErrorArgs中
+        for folderName, folderContent in self.classifyDownloadArgsIndexByFolder.items():
+            for fileName, fileContent in folderContent.items():
+                devIP, downloadArgList_index = fileContent
+                try:
+                    devArgStruct = self.classifyDownloadArgsByDevIP.get(devIP)  # 按照ip拿DevLoginAndDownloadArgStruct
+                except IndexError:
+                    logger.error(f"{devIP}的DevLoginAndDownloadArgStruct不存在,这是不应该发生的，说明程序有BUG，很严重！")
+                    continue
+                downloadArg = devArgStruct.downloadArgList[downloadArgList_index]  # 一次只能存一个downloadArg
+                error_DevArgStruct = self.downloadErrorArgs.get(devIP, None)  #
+                if error_DevArgStruct is None:
+                    error_DevArgStruct = DevLoginAndDownloadArgStruct()  # 如果数据类实例不存在，就新建一个数据类实例
+                    error_DevArgStruct.copy_from(devArgStruct, keepDownloadArgListEmpty=True)
+                error_DevArgStruct.downloadArgList.append(downloadArg)  # 添加下载参数
+                self.downloadErrorArgs[devIP] = error_DevArgStruct
+
+        # 第四步，把self.downloadErrorArgs的下载参数数量更新到UI中
+        self.ui.downloadError_TW.clearContents()  # 先清空下载错误表格组件
+        self.ui.downloadError_TW.setRowCount(0)
+        for devIP, devArgStruct in self.downloadErrorArgs.items():
+            self.ui.downloadError_TW.insertRow(0)
+            errorNum = len(devArgStruct.downloadArgList)
+            ipItem = AlignCenterQTableWidgetItem(str(devIP))  # 将ip和错误数量写入表格组件
+            self.ui.downloadError_TW.setItem(0, 0, ipItem)
+            errorNumItem = AlignCenterQTableWidgetItem(str(errorNum))
+            self.ui.downloadError_TW.setItem(0, 1, errorNumItem)
 
 
 if __name__ == "__main__":  # 用于当前窗体测试

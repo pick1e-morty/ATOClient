@@ -20,7 +20,7 @@ from ctypes import sizeof
 
 from loguru import logger
 
-from app.download_video_widget.dvw_define import DevLoginAndDownloadArgSturct, DVWTableWidgetEnum
+from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
 
 dahuaClient = None
 
@@ -49,7 +49,7 @@ def TimeDownLoadPosCallBack(lPlayHandle, dwTotalSize, dwDownLoadSize, index, rec
 
 class DahuaDownloader(object):
 
-    def __init__(self, downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgSturct):
+    def __init__(self, downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgStruct):
         self.downloadResultList = downloadResultList
         self.downloadResultListCondition = downloadResultListCondition
         self.devArgs = devArgs

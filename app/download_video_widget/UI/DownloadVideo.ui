@@ -140,7 +140,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>下载错误</string>
+         <string>下载错误/缺失文件</string>
         </property>
        </widget>
       </item>
@@ -200,7 +200,7 @@
         </column>
         <column>
          <property name="text">
-          <string>下载错误数量</string>
+          <string>缺失文件数量</string>
          </property>
         </column>
        </widget>

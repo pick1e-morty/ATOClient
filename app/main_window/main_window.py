@@ -1,7 +1,7 @@
 import multiprocessing
 import os
 import sys
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import QApplication
 from qfluentwidgets import MessageBox
 from qfluentwidgets import FluentIcon as FIF
@@ -78,7 +78,7 @@ class MainWindow(BaseMainWindow):
         self.switchToWidget.connect(self.do_afterSwitchFun)  #
 
     def do_afterSwitchFun(self, widget):
-        # 如果navigationInterface上的某个按钮被点击
+        # 当navigationInterface上的某个按钮被点击
         if widget == self.ppwInterface:
             # 把toolsGroupBox显示出来
             self.showMaximized()  # 父类窗体最大化
@@ -93,7 +93,9 @@ class MainWindow(BaseMainWindow):
         else:
             self.dvwInterface.openTheDoorAndCollectTheDog()  # 停止刷新
 
+    @pyqtSlot()
     def dvw_startDownLoad_PB_clicked(self):
+
         # 当 下载页面 中的 开始下载按钮 被点击时，触发这个函数
         # 两个组件之间的数值传递，
         # 遍历excelFile_LW中的所有item，取出每个item的数据
