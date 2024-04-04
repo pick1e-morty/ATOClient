@@ -35,8 +35,7 @@ class EPWclass(BaseEPW):
         # 用户选择不同的项目触发该方法
         if previous is not None:
             # 如果上一个item不为空，就先保存
-            excelFile_LW_ItemData = self.getExcelFile_LW_ItemData()
-            previous.setData(Qt.UserRole, excelFile_LW_ItemData)
+            self.saveTableDataToListWidgetItemData(previous)
         if current is not None:
             # 如果当前item不为空，就加载
             self.clearEPW_WidgetText()  # 清空EPW窗体中所有的Text数据，防止数据混乱
@@ -44,36 +43,6 @@ class EPWclass(BaseEPW):
         else:
             # 如果当前item为空，就清空EPW窗体中所有的Text数据
             self.clearEPW_WidgetText()
-
-    def getExcelFile_LW_ItemData(self):
-        # 从窗体中获取排序数据和相同月台数量及previousItem中excel文件路径
-        # 由于我重写了该方法，所以此时界面上的数据还没有改变，
-        # 下面两个方法是从界面上取得的数值，而非从curItem或preItem
-        in_edtw_ItemDataList = self.getDataInExcelData_TW()
-        in_sytctw_ItemDataList = self.getDataInSameYTCount_TW()
-        # 但curItem, preItem确实改变了，而excelFilePath又没有放到界面上
-        # 所以需要一些稍微“另类”的方法来获取到这个excelFilePath
-        # 更加符合直觉的方法应该是QAbstractItemView.selectionChanged(selected, deselected)
-        # excelFilePath = self.get_FilePathInExcelFile_LW_ItemData()
-        excelFilePath = self.ui.excelFile_LW.currentItem().data(Qt.UserRole).excelFilePath
-
-        # TODO 这个破文件地址还是不对
-
-
-
-        excelFile_LW_ItemData = ExcelFileListWidgetItemDataStruct()  # 创建excelFile_LW_ItemDataStruct对象
-        excelFile_LW_ItemData.edtw_ItemDataList = in_edtw_ItemDataList
-        excelFile_LW_ItemData.sytctw_ItemDataList = in_sytctw_ItemDataList
-        excelFile_LW_ItemData.excelFilePath = excelFilePath
-        return excelFile_LW_ItemData
-
-    @pyqtSlot()
-    def get_FilePathInExcelFile_LW_ItemData(self):
-        # 获取当前选中的item中的excelFilePath数据
-        # 确保excelFile_LW是单选的
-        # 因on_excelFile_LW_currentItemChanged处理逻辑而使用selectedItems
-        curItemDataFilePath = self.ui.excelFile_LW.selectedItems()[0].data(Qt.UserRole).excelFilePath
-        return curItemDataFilePath
 
     @pyqtSlot()
     def loadExcelFile_LW_ItemData(self, excelFile_LW_ItemData: ExcelFileListWidgetItemDataStruct):
@@ -125,6 +94,15 @@ class EPWclass(BaseEPW):
             self.ui.sameYTCount_TW.setItem(index, col, item)
         self.ui.sameYTCount_TW.resizeColumnsToContents()  # 调整列宽
         self.ui.sameYTCount_TW.updateSelectedRows()  # 刷新主题显示状态
+
+    def saveTableDataToListWidgetItemData(self, listItem: QListWidgetItem):
+        # 保存EPW窗体中两个表格中的数据到指定的ListWidgetItemData中（目前只有excelFile_LW）
+        in_edtw_ItemDataList = self.getDataInExcelData_TW()
+        in_sytctw_ItemDataList = self.getDataInSameYTCount_TW()
+        excelFile_LW_ItemData = listItem.data(Qt.UserRole)
+        excelFile_LW_ItemData.edtw_ItemDataList = in_edtw_ItemDataList
+        excelFile_LW_ItemData.sytctw_ItemDataList = in_sytctw_ItemDataList  # excelFile_LW_ItemData.excelFilePath不参与存取
+        listItem.setData(Qt.UserRole, excelFile_LW_ItemData)
 
     def getDataInExcelData_TW(self) -> List[ExcelDataTableWidgetItemDataStruct]:
         # 按照格式定义存放excelData_TW中的所有数据
@@ -222,7 +200,7 @@ class EPWclass(BaseEPW):
                         self.ui.excelFile_LW.addItem(aItem)
                         QApplication.processEvents()
                 except Exception as e:
-                    print(f"An error occurred while processing a file: {e}")
+                    logger.error(f"An error occurred while processing a file: {e}")
 
     def handleExcelFileData2ItemData(self, filePath: str) -> ExcelFileListWidgetItemDataStruct:
         # 获取excel文件的指定行列数据，并返回excelFile_LW_ItemDataStruct
@@ -517,17 +495,16 @@ if __name__ == "__main__":  # 用于当前窗体测试
     try:
         next(parentForTest.devConfigGenerate)
     except DevConfigFileContentIsInvalidException as e:
-        print(e)
+        logger.error(e)
 
     forms = EPWclass(parentForTest)  # 创建窗体
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
-    __filePath1 = os.path.join(__desktopPath, "1127.xlsx")
-    __filePath2 = os.path.join(__desktopPath, "1128.xlsx")
+    __filePath1 = os.path.join(__desktopPath, "0313.xlsx")
+    __filePath2 = os.path.join(__desktopPath, "0314.xlsx")
     # forms.addFilePathsToexcelFile_LWData([__filePath1])
     # forms.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
 
     excelFile_LW_ItemData = forms.handleExcelFileData2ItemData(__filePath1)  # 通过内部方法直接得到ExcelFileListWidgetItemDataStruct
-    print(excelFile_LW_ItemData)
     forms.show()
 
     sys.exit(app.exec_())

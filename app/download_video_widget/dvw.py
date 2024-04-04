@@ -218,7 +218,7 @@ class DVWclass(BaseDVW):
     def handleDownloadList(self, eflw_ItemDataList: List[ExcelFileListWidgetItemDataStruct]):
         # 点击开始下载按钮后的第一个执行的方法
         self.classifyArg(eflw_ItemDataList)
-        # self.beforeDownload(self.classifyDownloadArgsByDevIP)  # 其实这一步里就已经开始下载了
+        self.beforeDownload(self.classifyDownloadArgsByDevIP)  # 其实这一步里就已经开始下载了
 
     def beforeDownload(self, downloadArgs):
         # 分类之后填充几个组件     显示下载总量

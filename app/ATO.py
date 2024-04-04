@@ -27,9 +27,9 @@ if __name__ == '__main__':
 
     __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     testFile = os.path.join(__desktopPath, "0314.xlsx")
-    __filePath2 = os.path.join(__desktopPath, "test.xlsx")
-    # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
-    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile])
+    __filePath2 = os.path.join(__desktopPath, "0313.xlsx")
+    forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, testFile])
+    # forms.epwInterface.addFilePathsToexcelFile_LWData([testFile])
 
     app.exec_()
 

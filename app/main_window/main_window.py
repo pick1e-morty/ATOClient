@@ -93,9 +93,17 @@ class MainWindow(BaseMainWindow):
         else:
             self.dvwInterface.openTheDoorAndCollectTheDog()  # 停止刷新
 
+        # epw的保存机制是：当excelFile_LW中的currentSelectItem改变时，将excelData_TW和sameYt_TW中的数据保存到excelFile_LW中的item中
+        # 如果用户改动过表格组件中的数据后，却没有ItemChanged，那main_window这边取数据的时候就会丢失最新操作的那一部分数据
+        # 所以需要我这边手动保存一下
+
+        # TODO 这里做一个检测是否 修改的标志，如果没改的话还要来回存放就浪费资源了(还可能会卡顿)
+        excelFile_LW_CurrentItem = self.epwInterface.ui.excelFile_LW.currentItem()
+        if excelFile_LW_CurrentItem is not None:
+            self.epwInterface.saveTableDataToListWidgetItemData(excelFile_LW_CurrentItem)
+
     @pyqtSlot()
     def dvw_startDownLoad_PB_clicked(self):
-
         # 当 下载页面 中的 开始下载按钮 被点击时，触发这个函数
         # 两个组件之间的数值传递，
         # 遍历excelFile_LW中的所有item，取出每个item的数据
