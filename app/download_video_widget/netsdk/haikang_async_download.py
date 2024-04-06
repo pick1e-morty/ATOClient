@@ -5,14 +5,14 @@ from datetime import timedelta
 from pathlib import Path
 from time import sleep
 
-from UnifyNetSDK import HaikangNetSDK, DHPlaySDKException
+from UnifyNetSDK import HaikangNetSDK
+from UnifyNetSDK.dahua.dh_playsdk_exception import DHPlaySDKException
 from UnifyNetSDK.haikang.hk_netsdk_exception import HKNetSDKException
-from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg, UnifyFindFileByTimeArg
-
+from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg
 from loguru import logger
 
-from app.download_video_widget.utils.video2pic import tsPic
 from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
+from app.download_video_widget.utils.video2pic import tsPic
 
 logger.remove()
 logger.add(sys.stdout, level="TRACE")
@@ -69,12 +69,19 @@ class StopDownloadHandleThread(threading.Thread):
                         tsPic(absVideoPath=savePath)
                     except DHPlaySDKException as e:
                         logger.error(f"{savePath}转换失败，错误代码{str(e)}")
-                    status = "下载成功"  # 目前就实现了这么一种状态，想要其他状态就要自己写stopDownLoadTimer
+                    status = "下载成功"
                     self.updateDownloadStatusFun(iNDEX, status)
                     with self.downloadHandleDictCondition:  # 下载成功后就可以删掉这个句柄了
                         self.downloadHandleDict.pop(downloadHandle)
+                elif stopRestlt == 200:  # dahua那边没有这个200的错误码，
+                    _, iNDEX = self.downloadHandleDict[downloadHandle]
+                    status = "下载异常"
+                    self.updateDownloadStatusFun(iNDEX, status)
+                    with self.downloadHandleDictCondition:  # 下载异常也需要抛出句柄
+                        self.downloadHandleDict.pop(downloadHandle)
                 # 可是如果下载结果一直不为true呢，句柄就噶了，而且也不能获取对应的失败原因。print的信息很不理想
-                # 如果真的存在这种情况，就需要把查询和关闭功能写到这里，然后才能获取真正失败的原因。
+                # 0406更新，我感觉上面说的这个问题可能是因为stopDownLoadTimer在返回200的时候我没有正确处理才导致发生的
+                # 如果真的存在这种情况，就需要把查询和关闭功能写到这里，然后才能获取真正失败的原因。（海康手册里说getPos就三种状态0，100，200）
                 # 这部分暂时不写。
                 # 不止，tsPic也是个耗时操作，如果tsPic失败了，也需要上报状态，这个也暂时不写
                 # 这么看的话，上报的结构体要比我想的有些庞大。有些状态要报给 下载状态表格组件，有些状态要报给下载进度表格组件，这是两个索引，用于定位表格（那复杂度呢）
@@ -182,14 +189,14 @@ def HaikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
         downloadbytimeArg.saveFilePath = downloadArg.savePath
         downloadbytimeArg.startTime = downloadArg.downloadTime
         downloadbytimeArg.stopTime = downloadArg.downloadTime + timedelta(seconds=1)
-        downLoadHandle = haikangClient.asyncDownLoadByTime(userID, downloadbytimeArg)
         try:
+            downLoadHandle = haikangClient.asyncDownLoadByTime(userID, downloadbytimeArg)
             if downLoadHandle != -1:
                 with downloadHandleDictCondition:
                     downloadHandleDict[downLoadHandle] = [downloadArg.savePath, iNDEX]
                     downloadHandleDictCondition.notify()
             else:
-                text = downloadbytimeArg.getSimpleReadMsg()
+                text = downloadbytimeArg.getSimpleReadMsg()     # 怎么没进来？
                 text += "\n下载句柄为空，该录像下载失败"
                 logger.error(text)
                 status = "下载句柄为空"

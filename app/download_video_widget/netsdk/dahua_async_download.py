@@ -57,6 +57,9 @@ class StopDownloadHandleThread(threading.Thread):
             for downloadHandle in list(self.downloadHandleDict.keys()):  # 迭代字典的时候不允许更改字典（下面进行了一个pop操作），所以做了个keys的副本
                 # 上面取key是原子的，但是list()不是原子操作。这正好，因为由于查询是个非常耗时的操作，查询的期间是不影响生产者继续添加句柄的。就等下一批再处理呗
                 stopRestlt = dahuaClient.stopDownLoadTimer(downloadHandle)
+                # dahua这边没有海康那个200的下载异常错误码，那我怎么知道下载失败了呢？
+                # TODO 注意看   fDownLoadPosCallBack回调函数有这么一个参数
+                # dwDownLoadSize; 指已经播放的大小，单位为KB，当其值为 - 1; 时表示本次回放结束，-2; 表示写文件失败
                 if stopRestlt is True:
                     savePath, iNDEX = self.downloadHandleDict[downloadHandle]
                     try:

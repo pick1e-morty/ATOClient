@@ -255,7 +255,7 @@ class EPWclass(BaseEPW):
         if selectedItems:
             selectedItem = selectedItems[0]
             selectedItemText = selectedItem.text()
-            filePath = self.get_FilePathInExcelFile_LW_ItemData()  # 拿到这个项目保存的文件地址
+            filePath = selectedItem.data(Qt.UserRole).excelFilePath  # 拿到这个项目保存的文件地址
             excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)  # 通过内部方法直接得到ExcelFileListWidgetItemDataStruct
             if excelFile_LW_ItemData:  # 这里的写法跳过了文件名重复判断和ListWidgetItem.setData()
                 self.clearEPW_WidgetText()  # 因为切项目的时候会自动保存

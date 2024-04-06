@@ -56,7 +56,7 @@ class DVWclass(BaseDVW):
         self.downloadResultList: ListProxy = None  # 从manager拿的进程通信列表对象，它的方法定义在multiprocess.managers.BaseListProxy
         self.downloadResultListCondition: ConditionProxy = None  # 负责downloadResultList的进程安全同步和非空任务事件通知
         self.getDownloadResultThreadInstance = None  # getDownloadResultThread是从downloadResultList中不断拿结果并发信号的线程
-        self.downloadDone: bool = None  # 一个关闭标志，用来关getDownloadResultThread的
+        self.downloadDone: bool = False  # 一个关闭标志，用来关getDownloadResultThread的
         self.ipRowIndexIndownloadProgress_TW = {}  # 这个变量是用来存储ip所在行的索引的，用来更新进度条的
         self.startDownloadThreadInstance = None  # 负责开进程池的线程,startDownloadThread
         self.totalDownloadCount = None  # 下载总量，用来更新 下载进度 标签
@@ -274,6 +274,7 @@ class DVWclass(BaseDVW):
     def on_convert_PB_clicked(self):
         # MP4转JPG按钮被按下
         # 遍历整个pic文件夹及其所有子文件夹中的mp4文件，全部转换为jpg文件
+        # 删除文件体积为0的mp4文件
         fileList = [pathObject for pathObject in Path(DVW_DOWNLOAD_VIDEO_PATH).rglob("*") if pathObject.is_file()]
         mp4FileList = [pathObject for pathObject in fileList if pathObject.suffix == DVW_DOWNLOAD_FILE_SUFFIX]
         for filePath in mp4FileList:

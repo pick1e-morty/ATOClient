@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     app.exec_()
 
-# 现在的文件体积是200mb，7z极限压缩后是50mb
+# 现在的文件体积是200mb(两个sdk的dll能占100)，7z极限压缩后是50mb
 
 # pyinstaller --noconfirm --onedir --console --clean
 # --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py"

@@ -1,25 +1,33 @@
 import multiprocessing
 import os
 import sys
+from traceback import format_exception
+from types import TracebackType
+from typing import Type
+
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import QApplication
-from qfluentwidgets import MessageBox
-from qfluentwidgets import FluentIcon as FIF
 from configobj.validate import VdtTypeError, VdtValueError, ValidateError
 from loguru import logger
+from qfluentwidgets import FluentIcon as FIF, Dialog
+from qfluentwidgets import MessageBox
 
+from app.download_video_widget.dvw import DVWclass
+from app.esheet_process_widget.epw import EPWclass
+from app.main_window.base_main_window import BaseMainWindow
+from app.picture_process_widget.ppw import PPWclass
 from app.utils.dev_config import YtBindDevConfigGenerate, DevConfigFileNotFoundError, DevConfigFileInvalidError, DevConfigFileContentIsEmptyException, DevConfigFileContentIsInvalidException, DevConfigFileHandleErrorException
 from app.utils.forms_config import getFormsConfigDict, VdtStrNotUpperError, VdtDateTimeFormatError
-
-from app.main_window.base_main_window import BaseMainWindow
-from app.esheet_process_widget.epw import EPWclass
-from app.download_video_widget.dvw import DVWclass
-from app.picture_process_widget.ppw import PPWclass
+from app.utils.mcsl2utils import exceptionFilter, ExceptionFilterMode, ExceptionWidget
 
 
 class MainWindow(BaseMainWindow):
     def __init__(self):
         super().__init__()
+
+        self.oldHook = sys.excepthook
+        sys.excepthook = self.catchExceptions
+
         self.loadSplashScreen()  # 开始屏幕
         self.load_devConfigGenerate()  # 载入设备配置生成器
         self.load_formsConfig()  # 载入窗体UI配置
@@ -114,6 +122,46 @@ class MainWindow(BaseMainWindow):
                 excelFileListWidgetItemDataStructList.append(excelFile_LW_ItemData)
         if excelFileListWidgetItemDataStructList:
             self.dvwInterface.handleDownloadList(excelFileListWidgetItemDataStructList)
+
+    def catchExceptions(self, ty: Type[BaseException], value: BaseException, _traceback: TracebackType):
+        """
+        全局捕获异常，并弹窗显示
+        :param ty: 异常的类型
+        :param value: 异常的对象
+        :param _traceback: 异常的traceback
+        """
+        # 过滤部分异常
+        mode = exceptionFilter(ty, value, _traceback)
+
+        if mode == ExceptionFilterMode.SILENT:
+            return
+
+        if mode == ExceptionFilterMode.PASS:
+            logger.info(f"忽略了异常: {ty} {value} {_traceback}")
+            return
+
+        elif mode == ExceptionFilterMode.RAISE:
+            logger.error(msg=f"捕捉到异常: {ty} {value} {_traceback}")
+            return self.oldHook(ty, value, _traceback)
+
+        elif mode == ExceptionFilterMode.RAISE_AND_PRINT:
+            tracebackString = "".join(format_exception(ty, value, _traceback))
+            logger.error(msg=tracebackString)
+            exceptionWidget = ExceptionWidget(tracebackString)
+            box = Dialog(self.tr("MCSL2 发生未经处理的异常"), content=self.tr("如果有能力可自行解决，无法解决请积极反馈！"), parent=None, )
+            box.titleBar.show()
+            box.setTitleBarVisible(False)
+            box.yesButton.setText(self.tr("确认并复制到剪切板"))
+            box.cancelButton.setText(self.tr("知道了"))
+            del box.contentLabel
+            box.textLayout.addWidget(exceptionWidget.exceptionScrollArea)
+            box.yesSignal.connect(lambda: QApplication.clipboard().setText(tracebackString))
+            box.yesSignal.connect(box.deleteLater)
+            box.cancelSignal.connect(box.deleteLater)
+            box.yesSignal.connect(exceptionWidget.deleteLater)
+            box.cancelSignal.connect(exceptionWidget.deleteLater)
+            box.exec()
+            return self.oldHook(ty, value, _traceback)
 
 
 if __name__ == '__main__':
