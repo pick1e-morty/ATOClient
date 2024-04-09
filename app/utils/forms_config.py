@@ -1,6 +1,9 @@
 from pathlib import Path
+
 from configobj import ConfigObj
 from configobj.validate import Validator, ValidateError, is_list, VdtTypeError, VdtValueError
+
+from app.utils.project_path import APPDATA_PATH
 
 
 def is_list_of_digit_strings(value):
@@ -49,17 +52,15 @@ def contains_valid_format_codes(input_string):
     return True
 
 
-def getFormsConfigDict(a_configFilePath=None):
-    __configFilePath = Path(__file__).parent.with_name("AppData") / "config.ini" if a_configFilePath is None else a_configFilePath
-    try:
-        formsConfigObj = ConfigObj(str(__configFilePath), encoding="UTF8", file_error=True, raise_errors=True)
-    except OSError as errorText:
-        errorText = f"界面配置文件不存在，整个文件路径最好是英文的且绝对不能带有空格\n原报错信息{errorText}"
-        raise OSError(errorText)
-
-    check_epw_config(formsConfigObj)
-
-    return formsConfigObj
+def is_valid_version(version):
+    # 检查版本号是否符合要求
+    # 版本号格式为x.y.z，其中x、y、z都是非负整数
+    # 使用正则表达式检查版本号格式
+    import re
+    pattern = r'^v\d+\.\d+\.\d+$'
+    if not re.match(pattern, version):
+        raise ValueError("版本号格式错误")
+    return True
 
 
 def check_dvw_config(formsConfigObj: ConfigObj):
@@ -89,6 +90,60 @@ def check_epw_config(formsConfigObj: ConfigObj):
 
     scanTimeFormat = epwConfig["自定义格式"]["扫描时间格式"]
     vtor.check('contains_valid_format_codes', scanTimeFormat)
+
+
+def check_mainwindow_config(formsConfigObj):
+    # 检查epw配置是否符合要求
+    vtor = Validator()
+    vtor.functions['is_valid_version'] = is_valid_version
+
+    mainwindowConfig = formsConfigObj["mainwindow"]
+    checkUpdate = mainwindowConfig["检查更新"]
+    vtor.check('boolean', checkUpdate)
+    ignoreVersion = mainwindowConfig["忽略版本号"]
+    vtor.check('is_valid_version', ignoreVersion)
+
+
+def getFormsConfigDict():
+    __configFilePath = APPDATA_PATH / "config.ini"
+    try:
+        formsConfigObj = ConfigObj(str(__configFilePath), encoding="UTF8", file_error=True, raise_errors=True)
+    except OSError as errorText:
+        errorText = f"界面配置文件不存在，整个文件路径最好是英文的且绝对不能带有空格\n原报错信息{errorText}"
+        raise OSError(errorText)
+
+    check_epw_config(formsConfigObj)
+    check_mainwindow_config(formsConfigObj)
+    return formsConfigObj
+
+
+class FormsConfigWrite(object):
+    """
+    专门用来修改配置的类
+    """
+
+    def __init__(self):
+        self.configFilePath = APPDATA_PATH / "config.ini"
+        self.configObject = ConfigObj(str(self.configFilePath), encoding='UTF-8')
+
+    def change_mainwindow_ignore_version(self, version):
+        vtor = Validator()
+        vtor.functions['is_valid_version'] = is_valid_version
+
+        vtor.check('is_valid_version', version)
+        self.configObject['mainwindow']['忽略版本号'] = version
+        # 修改完记得write写入配置文件
+        self.configObject.write()
+
+    def __write_config(self, key, value):
+        """
+        修改配置文件
+        :param key: 配置文件的键
+        :param value: 配置文件的值
+        :return:
+        """
+        self.configObject[key] = value
+        self.configObject.write()
 
 
 if __name__ == "__main__":

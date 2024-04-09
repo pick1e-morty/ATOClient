@@ -13,7 +13,7 @@ from qfluentwidgets import ScrollArea, PushButton
 from app.picture_process_widget.base_ppw import BasePPW
 from app.picture_process_widget.utils.tool_box import ToolsGroupBox
 from app.picture_process_widget.utils.writeable_label import WriteableLabel
-from app.utils.projectPath import DVW_DOWNLOAD_VIDEO_PATH
+from app.utils.project_path import DVW_DOWNLOAD_VIDEO_PATH
 from app.utils.tools import removeDir
 
 # dvw下载后的图片存放地址，ppw要从这个文件夹中取子级文件夹中的图片

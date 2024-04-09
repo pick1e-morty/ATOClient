@@ -21,7 +21,7 @@ from app.download_video_widget.netsdk.dahua_async_download import dahuaDownloade
 from app.download_video_widget.netsdk.haikang_async_download import HaikangDownloader
 from app.download_video_widget.utils.progress_bar import PercentProgressBar
 from app.esheet_process_widget.epw_define import ExcelFileListWidgetItemDataStruct
-from app.utils.projectPath import DVW_DOWNLOAD_FILE_SUFFIX, DVW_CONVERTED_FILE_SUFFIX, DVW_DATETIME_FORMAT, DVW_DOWNLOAD_VIDEO_PATH
+from app.utils.project_path import DVW_DOWNLOAD_FILE_SUFFIX, DVW_CONVERTED_FILE_SUFFIX, DVW_DATETIME_FORMAT, DVW_DOWNLOAD_VIDEO_PATH
 from app.utils.tools import findItemTextInTableWidgetRow, AlignCenterQTableWidgetItem, removeDir
 
 
@@ -46,8 +46,9 @@ class DVWclass(BaseDVW):
         # 从init这里做实例变量声明根本就是个错误，很容易就把初始化给忘了
 
         self.classifyDownloadArgsByDevIP = {}  # 把下载参数按照ip分类，因为最终下载时是以ip为单位的
+        self.classifyDownloadArgsIndexByFolder = {}  # 将classifyDownloadArgsByDevIP按照文件夹分类，方便跟本地的文件夹进行对比，以得到downloadErrorArgs
         self.downloadErrorArgs = {}  # 收集下载错误的下载参数，和classifyDownloadArgsByDevIP是相同结构的
-        self.classifyDownloadArgsIndexByFolder = {}  # 将classifyDownloadArgsByDevIP按照文件夹分类，
+        self.remkDirWithDownloadErrorArgs = set()  # 用于记录需要重新创建的文件夹，在文件下载完成之后的空档期用户是有可能删除所有文件夹的。1 “下载器没有权限创建文件夹”，2 遍历downloadErrorArgs取文件夹列表性能上不划算，几乎相当于下载器中每次做个文件夹是否存在的检查了。所以创建这个变量
 
         # self.beforeDownloadErrorFlag = ["初始化失败", "登陆失败"]
         # 如果子进程上报的设备状态在这个列表中就表明设备登陆失败了，就需要把整个key_ip中的downloadArgs_value都加到self.downloadErrorArgs中
@@ -61,7 +62,7 @@ class DVWclass(BaseDVW):
         self.startDownloadThreadInstance = None  # 负责开进程池的线程,startDownloadThread
         self.totalDownloadCount = None  # 下载总量，用来更新 下载进度 标签
         self.downloadedCount = None  # 下载成功的数量。 　只能从那个线程中进行更改。也是用来更新 下载进度 标签
-        self.downloadArgsNumInFolderDict = {}  # 从文件夹的角度统计下载参数的数量，也就是每个文件夹下应有文件数量
+        self.downloadArgsNumInFolderDict = {}  # 从文件夹的角度统计下载参数的数量，也就是每个文件夹下应有文件数量.这是fileCount_TW要用的变量，取自下载前
         self.downloadStatusChange.connect(self.updateDownloadStatusUI)  # 这个信号也是getDownloadResultThread发出来的
         self.downloadStatusDone.connect(self.do_downloadStatusDone)  # 由于 下载线程是一个多线程，而下载结束后需要进行一些UI上的改动，故需要线程发送下载完成的信号，然后由槽函数负责更新UI
 
@@ -266,7 +267,11 @@ class DVWclass(BaseDVW):
     @pyqtSlot()
     def on_reDownload_PB_clicked(self):
         # 重新下载按钮被按下
-        self.beforeDownload(self.downloadErrorArgs)
+
+        for folderName in self.remkDirWithDownloadErrorArgs:  # 先创建文件夹，主下载按钮的文件夹创建在classifyArg中，
+            pathObject = Path(DVW_DOWNLOAD_VIDEO_PATH / folderName)  # 而重新下载前用户是有可能删除文件夹的，我这里稍微的确保一下文件夹的存在
+            pathObject.mkdir(exist_ok=True)  # 我当然知道如果真的想保证文件夹路径存在就应该在下载器中实现这个功能
+        self.beforeDownload(self.downloadErrorArgs)  # 可这样会浪费多少时间性能资源，下载器还是个多进程的，指不定整上个什么查不出来的bug
 
     @pyqtSlot(bool)
     def do_downloadStatusDone(self, done):
@@ -340,6 +345,7 @@ class DVWclass(BaseDVW):
 
     def afterDownload(self):
         self.downloadErrorArgs = {}  # 收集下载错误的下载参数，和classifyDownloadArgsByDevIP是相同结构的
+        self.remkDirWithDownloadErrorArgs = set()  # 用于记录需要重新创建的文件夹，在文件下载完成之后的空档期用户是有可能删除所有文件夹的。1 “下载器没有权限创建文件夹”，2 遍历downloadErrorArgs取文件夹列表性能上不划算，几乎相当于下载器中每次做个文件夹是否存在的检查了。所以创建这个变量
         # 下载完成后执行的方法，
         # localDirsList和classifyDownloadArgsIndexByFolder是相同的结构，不过它的dirDict[fileName]的内容是个空列表
         # 如果localDirsList含有classifyDownloadArgsIndexByFolder中相同fileName就表示这个文件下载成功了，需要想办法在classifyDownloadArgsIndexByFolder中移除这个fileName
@@ -366,6 +372,7 @@ class DVWclass(BaseDVW):
         self.classifyDownloadArgsIndexByFolder = {folder: content for folder, content in self.classifyDownloadArgsIndexByFolder.items() if content}
         # 第三步，把self.classifyDownloadArgsIndexByFolder按照ip分类并写入到self.downloadErrorArgs中
         for folderName, folderContent in self.classifyDownloadArgsIndexByFolder.items():
+            self.remkDirWithDownloadErrorArgs.add(folderName)  # 这里不用集合也行，因为上面的folderName已经用字典的key特性去重过了
             for fileName, fileContent in folderContent.items():
                 devIP, downloadArgList_index = fileContent
                 try:

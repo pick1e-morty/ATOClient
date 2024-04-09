@@ -10,6 +10,7 @@ from app.esheet_process_widget.epw_define import YTCTFEnum, YTConfigDataStruct
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 
+from app.utils.project_path import APPDATA_PATH
 from app.utils.tools import is_instance_variables_has_empty, is_empty
 
 
@@ -91,12 +92,9 @@ class DevConfigFileContentIsInvalidException(Exception):
         super().__init__(self.message)
 
 
-def getYtConfigFromConfigFile(a_devConfigFilePath: Union[Path, str] = None) -> Dict[str, YTConfigDataStruct]:
+def getYtConfigFromConfigFile() -> Dict[str, YTConfigDataStruct]:
     # 从配置文件中读取月台配置
-    devConfigFilePath = Path(__file__).parent.with_name("AppData") / "月台配置.xlsx" if a_devConfigFilePath is None else a_devConfigFilePath
-
-
-    # 如果用户没传地址，就用缺省的
+    devConfigFilePath = APPDATA_PATH / "月台配置.xlsx"
     try:
         wb = load_workbook(str(devConfigFilePath))  # 打开配置文件
     except InvalidFileException:

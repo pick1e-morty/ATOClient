@@ -9,7 +9,7 @@ from typing import List
 from app.download_video_widget.UI.ui_DownloadVideo import Ui_DVW_Widget
 from loguru import logger
 
-from app.utils.projectPath import DVW_DOWNLOAD_VIDEO_PATH, DVW_DOWNLOAD_FILE_SUFFIX, DVW_CONVERTED_FILE_SUFFIX
+from app.utils.project_path import DVW_DOWNLOAD_VIDEO_PATH, DVW_DOWNLOAD_FILE_SUFFIX, DVW_CONVERTED_FILE_SUFFIX
 from app.utils.tools import findItemTextInTableWidgetRow, AlignCenterQTableWidgetItem
 
 

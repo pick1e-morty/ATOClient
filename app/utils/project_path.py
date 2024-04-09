@@ -5,6 +5,8 @@ from pathlib import Path
 """
 
 PROJECT_ROOT_PATH = Path(__file__).parent.parent  # ATOClient/app 是项目根目录
+APPDATA_PATH = PROJECT_ROOT_PATH / "AppData"
+
 DVW_DOWNLOAD_VIDEO_PATH = PROJECT_ROOT_PATH / "pic"  # dvw下载到的文件路径
 DVW_DOWNLOAD_VIDEO_PATH.mkdir(exist_ok=True)  # 创建路径
 

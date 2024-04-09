@@ -5,11 +5,12 @@ from traceback import format_exception
 from types import TracebackType
 from typing import Type
 
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, QUrl
+from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QApplication
 from configobj.validate import VdtTypeError, VdtValueError, ValidateError
 from loguru import logger
-from qfluentwidgets import FluentIcon as FIF, Dialog
+from qfluentwidgets import FluentIcon as FIF, Dialog, InfoBar, InfoBarPosition
 from qfluentwidgets import MessageBox
 
 from app.download_video_widget.dvw import DVWclass
@@ -17,8 +18,11 @@ from app.esheet_process_widget.epw import EPWclass
 from app.main_window.base_main_window import BaseMainWindow
 from app.picture_process_widget.ppw import PPWclass
 from app.utils.dev_config import YtBindDevConfigGenerate, DevConfigFileNotFoundError, DevConfigFileInvalidError, DevConfigFileContentIsEmptyException, DevConfigFileContentIsInvalidException, DevConfigFileHandleErrorException
-from app.utils.forms_config import getFormsConfigDict, VdtStrNotUpperError, VdtDateTimeFormatError
+from app.utils.forms_config import getFormsConfigDict, VdtStrNotUpperError, VdtDateTimeFormatError, FormsConfigWrite
+from app.utils.global_var import RELEASE_URL
 from app.utils.mcsl2utils import exceptionFilter, ExceptionFilterMode, ExceptionWidget
+from app.utils.update_info_msgbox import UpdateInfoMsgBox
+from app.utils.version_manager import VersionManager
 
 
 class MainWindow(BaseMainWindow):
@@ -32,6 +36,42 @@ class MainWindow(BaseMainWindow):
         self.load_devConfigGenerate()  # 载入设备配置生成器
         self.load_formsConfig()  # 载入窗体UI配置
         self.initUI()  # 初始化UI
+
+        self.splashScreen.finish()
+
+        self.mainwindow_config = self.formsConfigDict["mainwindow"]
+
+        if self.mainwindow_config["检查更新"]:
+            ignoreVersion = self.mainwindow_config["忽略版本号"]
+            self.versionManager = VersionManager(ignoreVersion)
+            self.checkUpdate()
+
+    def checkUpdate(self):
+        try:
+            hasNewVersion = self.versionManager.hasNewVersion()
+        except Exception as e:
+            logger.error(e)
+            InfoBar.error('更新提示', '检查更新失败，请检查网络连接', duration=1500, position=InfoBarPosition.TOP, parent=self)
+            return
+        if hasNewVersion:
+            newVersion, releaseTitle, releaseInfo = self.versionManager.getUpdateReleaseInfo()
+            updateMsgBox = UpdateInfoMsgBox(releaseTitle, releaseInfo, self)
+            updateMsgBox.yesSignal.connect(lambda: QDesktopServices.openUrl(QUrl(RELEASE_URL)))  # 跳转到更新页面
+            updateMsgBox.ignoreButtonClicked.connect(lambda: self.write_ignore_version2Configini(newVersion))  # 写入忽略版本号到配置文件
+            updateMsgBox.yesButton.setText('打开更新页面')
+            updateMsgBox.cancelButton.setText('取消')
+            updateMsgBox.raise_()
+            updateMsgBox.exec()
+        else:
+            InfoBar.success('更新提示', '当前已是最新版本', duration=1500, position=InfoBarPosition.TOP, parent=self)
+
+    def write_ignore_version2Configini(self, version):
+        # 写入忽略版本号到配置文件
+        formsConfigWriteObj = FormsConfigWrite()  # 这个写法很不优雅，用完就关的妥协
+        try:
+            formsConfigWriteObj.change_mainwindow_ignore_version(version)
+        except ValueError as e:
+            logger.error(str(e))
 
     def load_devConfigGenerate(self):
         # 实例化并激活 月台绑定设备配置生成器

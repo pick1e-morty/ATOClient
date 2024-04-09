@@ -36,15 +36,18 @@ netsdk日志文件名要用ip来表示，不然log根本没法看
 # 下载优化
 
 # 可以选择下载前不查询录像是否存在，默认是关闭的就好
+
 # dvr吞下载句柄的问题
+
+# 同时开六个紫禁城，其中有一个紫禁城并不进行下载，好像是因为他抢不到通信的权限，然后就阻塞在那里了
 
 # appdata中的资源文件的合并
 
     首先是AppData要向上提一级
     要在ato的root根目录下
 
-
 # 多进程优化
+
     调试模式下，退出程序时报错
     Error in atexit._run_exitfuncs:
     Traceback (most recent call last):
@@ -75,3 +78,8 @@ netsdk日志文件名要用ip来表示，不然log根本没法看
     在所有子线程，子进程，进程通讯器关闭后我都有做log，所以我想应该不是代码的问题吧？
     难道是调试模式的问题？开下面这个全局的except，再跑正常模式看看能不能抓到这个 OSError
     https://github.com/MCSLTeam/MCSL2/blob/10f367beaecb52c903022b72cfb7f28cdbf253d7/MCSL2Lib/windowInterface.py#L352C9-L352C24
+
+# 软件更新的优化
+
+requests.get没有开多线程，不过有超时两秒
+还有这个更新提示的 窗口显示节点 很奇怪，我觉得应该把checkUpdate放到splashScreen里面去做
