@@ -14,8 +14,6 @@ from loguru import logger
 from app.download_video_widget.utils.video2pic import tsPic
 from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
 
-logger.remove()
-logger.add(sys.stdout, level="INFO")
 
 dahuaClient = None
 
@@ -103,8 +101,8 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
             updateDownloadStatusFun(0, sucessText, widgetEnum)
             return executeResult
         except DHNetSDKException as e:
-            logger.error(f"{deviceAddress}{errorText},{e}")
-            errorStr = str(e) + errorText
+            logger.error(f"{deviceAddress}{errorText},{type(e).__name__}")
+            errorStr = type(e).__name__ + errorText
             updateDownloadStatusFun(0, errorStr, widgetEnum)
             sys.exit(1)
 
@@ -154,10 +152,10 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
                 status = "下载句柄为空"
                 updateDownloadStatusFun(iNDEX, status)
         except DHNetSDKException as e:
-            text = downloadbytimeArg.getSimpleReadMsg() + f"\n{e}"
+            text = downloadbytimeArg.getSimpleReadMsg() + f"\n{type(e).__name__}"
             text += "\n下载句柄为空，该录像下载失败"
             logger.error(text)
-            status = str(e)
+            status = str(type(e).__name__)
             updateDownloadStatusFun(iNDEX, status)
 
     with downloadHandleDictCondition:  # 如果没有一个下载句柄传过去的话，就需要手动解锁一下，让子线程顺利关闭

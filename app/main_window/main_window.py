@@ -25,8 +25,8 @@ class MainWindow(BaseMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.oldHook = sys.excepthook
-        sys.excepthook = self.catchExceptions
+        # self.oldHook = sys.excepthook     # logger还需要适配
+        # sys.excepthook = self.catchExceptions
 
         self.loadSplashScreen()  # 开始屏幕
         self.load_devConfigGenerate()  # 载入设备配置生成器

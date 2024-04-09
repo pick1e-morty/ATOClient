@@ -1,15 +1,13 @@
 # coding:utf-8
-import os
 import sys
 from pathlib import Path
 
-from PyQt5.QtCore import Qt, QRect, QUrl, pyqtSignal, QSize
-from PyQt5.QtGui import QIcon, QPainter, QImage, QBrush, QColor, QFont, QDesktopServices
-from PyQt5.QtWidgets import QApplication, QFrame, QStackedWidget, QHBoxLayout, QLabel, QMainWindow, QWidget
-
-from qfluentwidgets import (NavigationInterface, NavigationItemPosition, NavigationWidget, MessageBox,
-                            isDarkTheme, setTheme, Theme, setThemeColor, qrouter, FluentWindow, NavigationAvatarWidget, PushButton, SplashScreen)
+from PyQt5.QtCore import Qt, pyqtSignal, QSize
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication, QFrame, QStackedWidget, QHBoxLayout, QLabel, QWidget
 from qfluentwidgets import FluentIcon as FIF
+from qfluentwidgets import (NavigationInterface, NavigationItemPosition, MessageBox,
+                            isDarkTheme, NavigationAvatarWidget, SplashScreen)
 from qframelesswindow import FramelessWindow, StandardTitleBar
 
 
@@ -68,8 +66,8 @@ class BaseMainWindow(FramelessWindow):
         # add custom widget to bottom
         self.navigationInterface.addWidget(
             routeKey='avatar',
-            widget=NavigationAvatarWidget('OffLine', 'resource/Robot_black.png'),
-            onClick=None,
+            widget=NavigationAvatarWidget('OffLine', str(Path(__file__).parent / "resource/Robot_black.png")),
+            onClick=self.showMessageBox,
             position=NavigationItemPosition.BOTTOM,
         )
 
@@ -141,7 +139,7 @@ class BaseMainWindow(FramelessWindow):
         QApplication.processEvents()
 
     def showMessageBox(self):
-        w = MessageBox('正在开发', '', self)
+        w = MessageBox('developing', '', self)
         w.exec()
 
 

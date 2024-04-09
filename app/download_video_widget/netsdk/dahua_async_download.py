@@ -5,14 +5,13 @@ from datetime import timedelta
 from pathlib import Path
 from time import sleep
 
-from UnifyNetSDK import DaHuaNetSDK, DHPlaySDKException
+from UnifyNetSDK import DaHuaNetSDK
 from UnifyNetSDK.dahua.dh_netsdk_exception import DHNetSDKException  # TODO 这个地方的导入应该是有办法统一一下的
-from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg, UnifyFindFileByTimeArg
-
+from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg
 from loguru import logger
 
-from app.download_video_widget.utils.video2pic import tsPic
 from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
+from app.download_video_widget.utils.video2pic import tsPic
 
 dahuaClient = None
 
@@ -56,25 +55,38 @@ class StopDownloadHandleThread(threading.Thread):
                     self.downloadHandleDictCondition.wait()  # 如果下载句柄列表为空，但生产者没有发出完毕信号，则线程阻塞等待。
             for downloadHandle in list(self.downloadHandleDict.keys()):  # 迭代字典的时候不允许更改字典（下面进行了一个pop操作），所以做了个keys的副本
                 # 上面取key是原子的，但是list()不是原子操作。这正好，因为由于查询是个非常耗时的操作，查询的期间是不影响生产者继续添加句柄的。就等下一批再处理呗
-                stopRestlt = dahuaClient.stopDownLoadTimer(downloadHandle)
+                try:
+                    downloadPos = dahuaClient.stopDownLoadTimer(downloadHandle)
+                except DHNetSDKException as e:  # 除非把stopDownLoadTimer拆开，不然拿不到具体的信息，这块应该没什么大问题
+                    logger.error(f"{downloadHandle}的stopDownLoadTimer执行失败，错误代码{type(e).__name__}")
+                    continue
+                savePath, iNDEX, TimeoutNum = self.downloadHandleDict[downloadHandle]
                 # dahua这边没有海康那个200的下载异常错误码，那我怎么知道下载失败了呢？
                 # TODO 注意看   fDownLoadPosCallBack回调函数有这么一个参数
                 # dwDownLoadSize; 指已经播放的大小，单位为KB，当其值为 - 1; 时表示本次回放结束，-2; 表示写文件失败
-                if stopRestlt is True:
-                    savePath, iNDEX = self.downloadHandleDict[downloadHandle]
+                # 那CLIENT_GetDownloadPos是不是也有相同的属性，可以返回-1，-2？
+                if downloadPos is True:
                     try:
-                        tsPic(absVideoPath=savePath)
-                    except DHPlaySDKException as e:
-                        logger.error(f"{savePath}转换失败，错误代码{str(e)}")
-                    status = "下载成功"  # 目前就实现了这么一种状态，想要其他状态就要自己写stopDownLoadTimer
+                        tsPic(absVideoPath=savePath)  # 这个也需要上报状态，先不写，因为整体使用逻辑还有点不成熟
+                    except Exception as e:
+                        logger.error(f"{savePath}转换失败，错误代码{type(e).__name__}\n如果tsPic那边能处理好，那这个log是不应该出现的")
+                    status = "下载成功"
+                    logger.success(f"下载ID {downloadHandle} {status}")
                     self.updateDownloadStatusFun(iNDEX, status)
                     with self.downloadHandleDictCondition:  # 下载成功后就可以删掉这个句柄了
                         self.downloadHandleDict.pop(downloadHandle)
-                # 可是如果下载结果一直不为true呢，句柄就噶了，而且也不能获取对应的失败原因。print的信息很不理想
-                # 如果真的存在这种情况，就需要把查询和关闭功能写到这里，然后才能获取真正失败的原因。
-                # 这部分暂时不写。
-                # 不止，tsPic也是个耗时操作，如果tsPic失败了，也需要上报状态，这个也暂时不写
-                # 这么看的话，上报的结构体要比我想的有些庞大。有些状态要报给 下载状态表格组件，有些状态要报给下载进度表格组件，这是两个索引，用于定位表格（那复杂度呢）
+                else:
+                    if TimeoutNum == 0:
+                        status = "下载超时"
+                        logger.error(f"下载ID {downloadHandle} {status}")
+                        self.updateDownloadStatusFun(iNDEX, status)
+                        with self.downloadHandleDictCondition:  # 下载超时需要抛出句柄
+                            self.downloadHandleDict.pop(downloadHandle)
+                    else:
+                        TimeoutNum -= 1
+                        with self.downloadHandleDictCondition:
+                            self.downloadHandleDict[downloadHandle] = [savePath, iNDEX, TimeoutNum]
+                        logger.error(f"下载ID {downloadHandle}，下载进度 {downloadPos}，剩余超时次数 {TimeoutNum}")
             sleep(0.5)
 
 
@@ -105,8 +117,8 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
             updateDownloadStatusFun(0, sucessText, widgetEnum)
             return executeResult
         except DHNetSDKException as e:
-            logger.error(f"{deviceAddress}{errorText},{e}")
-            errorStr = str(e) + errorText
+            logger.error(f"{deviceAddress}{errorText},{type(e).__name__}")
+            errorStr = type(e).__name__ + errorText
             updateDownloadStatusFun(0, errorStr, widgetEnum)
             if needExit:
                 sys.exit(1)  # 有些方法执行后还不能立即退出。不过这个判断也很可能用不上
@@ -133,8 +145,8 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
         updateDownloadStatusFun(0, sucessText, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE)
     except DHNetSDKException as e:
         errorText = "登录失败"
-        logger.error(f"{deviceAddress}{errorText},{e}")
-        errorStr = str(e) + errorText
+        logger.error(f"{deviceAddress}{errorText},{type(e).__name__}")
+        errorStr = type(e).__name__ + errorText
         updateDownloadStatusFun(0, errorStr, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE)
         dahuaClient.logclose()  # 这次就不上报了
         dahuaClient.cleanup()
@@ -148,6 +160,7 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     stopDownloadThreadInstance.setName(str(devArgs.devIP))  # 给线程加个名字(以IP为单位)，查错的时候方便点
     stopDownloadThreadInstance.start()
 
+    TimeoutNum = 20  # 传给StopDownloadHandleThread的参数，如果超过这个时间(20*sleep(0.5) = 10秒（我知道有偏差）)，就直接抛出这个下载句柄
     # 如果直接运行这个文件main函数，就不用做这个sleep，所以问题应该是出来了进程池上
     # sdk第一方的log提示 用json格式的参数进行查找录像失败
     for iNDEX, downloadArg in enumerate(devArgs.downloadArgList):
@@ -179,7 +192,7 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
             downLoadHandle = dahuaClient.asyncDownLoadByTime(userID, downloadbytimeArg)
             if downLoadHandle != 0:
                 with downloadHandleDictCondition:
-                    downloadHandleDict[downLoadHandle] = [downloadArg.savePath, iNDEX]
+                    downloadHandleDict[downLoadHandle] = [downloadArg.savePath, iNDEX, TimeoutNum]
                     downloadHandleDictCondition.notify()
             else:
                 text = downloadbytimeArg.getSimpleReadMsg()
@@ -188,10 +201,10 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
                 status = "下载句柄为空"
                 updateDownloadStatusFun(iNDEX, status)
         except DHNetSDKException as e:
-            text = downloadbytimeArg.getSimpleReadMsg() + f"\n{e}"
+            text = downloadbytimeArg.getSimpleReadMsg() + f"\n{type(e).__name__}"
             text += "\n下载句柄为空，该录像下载失败"
             logger.error(text)
-            status = str(e)
+            status = str(type(e).__name__)
             updateDownloadStatusFun(iNDEX, status)
 
     with downloadHandleDictCondition:  # 如果没有一个下载句柄传过去的话，就需要手动解锁一下，让子线程顺利关闭

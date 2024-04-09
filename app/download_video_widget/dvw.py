@@ -1,27 +1,26 @@
 import multiprocessing
 import sys
 import threading
-from bisect import bisect_left
+import time
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from multiprocessing.managers import ListProxy, ConditionProxy
 from pathlib import Path
-
-from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import (QApplication, QWidget, QTableWidgetItem)
 from typing import List
 
-from UnifyNetSDK.dahua.dh_playsdk_exception import DHPlaySDKException
-from qfluentwidgets import MessageBox
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import (QApplication, QTableWidgetItem)
+from UnifyNetSDK.dahua.dh_playsdk import DaHuaPlaySDK
+from UnifyNetSDK.dahua.dh_playsdk_exception import DHPlaySDKException, PLAY_NO_FRAME, PLAY_OPEN_FILE_ERROR
+from loguru import logger
+from qfluentwidgets import MessageBox, InfoBar, InfoBarPosition
 
 from app.download_video_widget.base_dvw import BaseDVW
+from app.download_video_widget.dvw_define import DownloadArg, DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
+from app.download_video_widget.netsdk.dahua_async_download import dahuaDownloader
 from app.download_video_widget.netsdk.haikang_async_download import HaikangDownloader
 from app.download_video_widget.utils.progress_bar import PercentProgressBar
-from app.download_video_widget.netsdk.dahua_async_download import dahuaDownloader
-from app.download_video_widget.utils.video2pic import tsPic
 from app.esheet_process_widget.epw_define import ExcelFileListWidgetItemDataStruct
-from app.download_video_widget.dvw_define import DownloadArg, DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
-from loguru import logger
 from app.utils.projectPath import DVW_DOWNLOAD_FILE_SUFFIX, DVW_CONVERTED_FILE_SUFFIX, DVW_DATETIME_FORMAT, DVW_DOWNLOAD_VIDEO_PATH
 from app.utils.tools import findItemTextInTableWidgetRow, AlignCenterQTableWidgetItem, removeDir
 
@@ -34,6 +33,7 @@ class DVWclass(BaseDVW):
 
     """
     downloadStatusChange = pyqtSignal(list)
+    downloadStatusDone = pyqtSignal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
@@ -63,6 +63,7 @@ class DVWclass(BaseDVW):
         self.downloadedCount = None  # 下载成功的数量。 　只能从那个线程中进行更改。也是用来更新 下载进度 标签
         self.downloadArgsNumInFolderDict = {}  # 从文件夹的角度统计下载参数的数量，也就是每个文件夹下应有文件数量
         self.downloadStatusChange.connect(self.updateDownloadStatusUI)  # 这个信号也是getDownloadResultThread发出来的
+        self.downloadStatusDone.connect(self.do_downloadStatusDone)  # 由于 下载线程是一个多线程，而下载结束后需要进行一些UI上的改动，故需要线程发送下载完成的信号，然后由槽函数负责更新UI
 
     def classifyArg(self, eflw_ItemDataList: List[ExcelFileListWidgetItemDataStruct]):
         """
@@ -210,10 +211,7 @@ class DVWclass(BaseDVW):
         self.manager.shutdown()  # 上面关完了，管理器也需要关
         logger.info("multiprocessing.Manager已关闭")
 
-        logger.info("自动执行一次mp4转jpg程序")
-        self.on_convert_PB_clicked()  # 自动执行一次mp4转jpg
-        logger.info("开始收集下载失败的文件信息")
-        self.afterDownload()  # 这是下载步骤结束后要做的操作，最核心的功能是核对下载文件数量是否匹配
+        self.downloadStatusDone.emit(True)
 
     def handleDownloadList(self, eflw_ItemDataList: List[ExcelFileListWidgetItemDataStruct]):
         # 点击开始下载按钮后的第一个执行的方法
@@ -270,25 +268,71 @@ class DVWclass(BaseDVW):
         # 重新下载按钮被按下
         self.beforeDownload(self.downloadErrorArgs)
 
+    @pyqtSlot(bool)
+    def do_downloadStatusDone(self, done):
+        if done:
+            logger.info("自动执行mp4转jpg程序")
+            self.on_convert_PB_clicked()  # 自动执行一次mp4转jpg
+            logger.info("收集缺失文件信息")
+            self.afterDownload()  # 这是下载步骤结束后要做的操作，最核心的功能是核对下载文件数量是否匹配
+
     @pyqtSlot()
     def on_convert_PB_clicked(self):
         # MP4转JPG按钮被按下
         # 遍历整个pic文件夹及其所有子文件夹中的mp4文件，全部转换为jpg文件
-        # 删除文件体积为0的mp4文件
         fileList = [pathObject for pathObject in Path(DVW_DOWNLOAD_VIDEO_PATH).rglob("*") if pathObject.is_file()]
         mp4FileList = [pathObject for pathObject in fileList if pathObject.suffix == DVW_DOWNLOAD_FILE_SUFFIX]
         for filePath in mp4FileList:
+            relative_path = str(filePath.relative_to(DVW_DOWNLOAD_VIDEO_PATH.parent))
+            absPicPath = str(filePath.with_name(str(filePath.stem) + ".jpg").absolute())
+            playClient = None
+            nPort = None
+            playResult = False
+            openResult = False
             try:
-                tsPic(filePath)
+                playClient = DaHuaPlaySDK()
+                nPort = playClient.getFreePort()
+                openResult = playClient.openFile(nPort, filePath)
+                playResult = playClient.play(nPort)
+                time.sleep(0.2)  # 要等dll那边把数据“填充”到port才能开始操作
+                playClient.catchPic(nPort, absPicPath)
+            except PLAY_OPEN_FILE_ERROR:
+                InfoBar.error(title='错误', content=f"{relative_path}文件打开失败，已自动删除", orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=3000, parent=self.ui.fileCount_TW)
+                logger.error(f"{filePath}的mp4文件打开失败，已自动删除")
+            except PLAY_NO_FRAME:
+                InfoBar.error(title='错误', content=f"{relative_path}文件没有有效帧，已自动删除", orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=3000, parent=self.ui.fileCount_TW)
+                logger.error(f"{filePath}的mp4文件没有有效帧，已自动删除")
             except DHPlaySDKException as e:
-                logger.error(f"{filePath}转换失败，错误代码{str(e)}")
+                InfoBar.error(title='错误', content=f"{relative_path}文件转换失败，错误代码{type(e).__name__}，已自动删除", orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=3000, parent=self.ui.fileCount_TW)
+                logger.error(f"{filePath}转换失败，错误代码{type(e).__name__}")
+            finally:
+                if playClient and nPort:
+                    if playResult:
+                        playClient.stop(nPort)
+                    if openResult:
+                        playClient.close(nPort)
+                    playClient.releasePort(nPort)
+                try:
+                    Path(filePath).unlink()
+                except Exception as e:
+                    logger.error(f"{filePath}自动删除失败，错误代码{type(e).__name__}")
+                    InfoBar.error(title='错误', content=f"{filePath}自动删除失败，错误代码{str(e)}", orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=3000, parent=self.ui.fileCount_TW)
+        QApplication.processEvents()
 
     @pyqtSlot()
     def on_deleteAllFile_PB_clicked(self):
         # 删除所有文件按钮被按下
         # 删除指定目录下的所有文件和子目录，但保留目录本身
+        def tryRemoveDir():
+            try:
+                removeDir(DVW_DOWNLOAD_VIDEO_PATH)
+            except Exception as e:
+                errorText = f"删除失败，错误代码{str(e)}"
+                InfoBar.error(title='提示', content=errorText, orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=5000, parent=self.ui.fileCount_TW)
+                logger.error(errorText)
+
         errorMsgBox = MessageBox('确认', "是否要清空pic文件夹中的所有子级文件夹和文件？", self)
-        errorMsgBox.yesSignal.connect(lambda: removeDir(DVW_DOWNLOAD_VIDEO_PATH))
+        errorMsgBox.yesSignal.connect(tryRemoveDir)
         errorMsgBox.raise_()
         errorMsgBox.yesButton.setText('确定')
         errorMsgBox.cancelButton.setText('取消')
@@ -311,7 +355,6 @@ class DVWclass(BaseDVW):
                     dirDict = localDirsDict.get(folderName, {})  # 尝试取出已有的 文件夹字典
                     dirDict[fileName] = []
                     localDirsDict[folderName] = dirDict
-
         # 上面取本地数据，下面对比内存数据
         for folderName, folderContent in localDirsDict.items():
             if folderName not in self.classifyDownloadArgsIndexByFolder:
@@ -321,7 +364,6 @@ class DVWclass(BaseDVW):
                     del self.classifyDownloadArgsIndexByFolder[folderName][fileName]  # 如果是，则从索引中删除该文件名
         # 移除所有内容为空的文件夹
         self.classifyDownloadArgsIndexByFolder = {folder: content for folder, content in self.classifyDownloadArgsIndexByFolder.items() if content}
-
         # 第三步，把self.classifyDownloadArgsIndexByFolder按照ip分类并写入到self.downloadErrorArgs中
         for folderName, folderContent in self.classifyDownloadArgsIndexByFolder.items():
             for fileName, fileContent in folderContent.items():
@@ -338,7 +380,6 @@ class DVWclass(BaseDVW):
                     error_DevArgStruct.copy_from(devArgStruct, keepDownloadArgListEmpty=True)
                 error_DevArgStruct.downloadArgList.append(downloadArg)  # 添加下载参数
                 self.downloadErrorArgs[devIP] = error_DevArgStruct
-
         # 第四步，把self.downloadErrorArgs的下载参数数量更新到UI中
         self.ui.downloadError_TW.clearContents()  # 先清空下载错误表格组件
         self.ui.downloadError_TW.setRowCount(0)
@@ -349,6 +390,8 @@ class DVWclass(BaseDVW):
             self.ui.downloadError_TW.setItem(0, 0, ipItem)
             errorNumItem = AlignCenterQTableWidgetItem(str(errorNum))
             self.ui.downloadError_TW.setItem(0, 1, errorNumItem)
+        QApplication.processEvents()
+        InfoBar.warning(title='提示', content="缺失文件统计完成", orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self.ui.downloadError_TW)
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
