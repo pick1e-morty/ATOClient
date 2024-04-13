@@ -31,4 +31,4 @@ if __name__ == '__main__':
     uimb.show()
     uimb.ignoreUpdateButton.adjustSize()
 
-    app.exec_()
+    sys.exit(app.exec_())

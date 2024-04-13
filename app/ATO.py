@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, testFile])
     # forms.epwInterface.addFilePathsToexcelFile_LWData([testFile])
 
-    app.exec_()
+    sys.exit(app.exec_())
 
 # 现在的文件体积是200mb(两个sdk的dll能占100)，7z极限压缩后是50mb
 
@@ -40,5 +40,6 @@ if __name__ == '__main__':
 # --collect-binaries "UnifyNetSDK"  # 这个参数的对象居然是模块
 # "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
 
-
+# C:\Users\Administrator\Documents\CodeProject\ATO\app\AppData\soft_icon.ico
 # pyinstaller --noconfirm --onedir --contents-directory . --console --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK"  "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
+# pyinstaller --noconfirm --onedir --contents-directory . --console --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK" -i "C:\Users\Administrator\Documents\CodeProject\ATO\app\AppData\soft_icon.ico" "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"

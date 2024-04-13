@@ -221,4 +221,4 @@ if __name__ == '__main__':
     # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
     forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
 
-    app.exec_()
+    sys.exit(app.exec_())

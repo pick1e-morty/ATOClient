@@ -22,13 +22,6 @@ app/picture_process_widget/ppw.py delUnMarkImg方法
 可以查layout所有的label，遍历label的filePath属性，不在walk的新文件列表中就给removeWidget了
 不过没必要呀，能省几个内存呢
 
-# 资源存放优化
-
-app/picture_process_widget/utils/writeable_label.py markImgFilePath
-这个用于标记的图片暂时先不放入qrc中，我现在就这一个图片文件，
-另外pyinstaller也会对资源文件进行一次包装加密什么的，
-而且我有预感，我后面还要加图片，来回的套这个qrc是很繁琐的。
-
 # 日志优化
 
 netsdk日志文件名要用ip来表示，不然log根本没法看
@@ -40,6 +33,8 @@ netsdk日志文件名要用ip来表示，不然log根本没法看
 # dvr吞下载句柄的问题
 
 # 同时开六个紫禁城，其中有一个紫禁城并不进行下载，好像是因为他抢不到通信的权限，然后就阻塞在那里了
+# TODO 这个问题特别显眼的严重，我准备在子进程里开一个缓冲的list，通讯归通讯，下载归下载
+# 那子进程里还要开一个线程是专门用来跟父进程通信的，
 
 # appdata中的资源文件的合并
 

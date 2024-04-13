@@ -1,9 +1,11 @@
 from pathlib import Path
 
-from PyQt5.QtCore import QPoint, QRect, Qt, pyqtSignal, QRectF, QPointF
+from PyQt5.QtCore import QRect, pyqtSignal, QRectF
 from PyQt5.QtGui import QPixmap, QPen, QPainter
 from PyQt5.QtWidgets import QLabel
 from loguru import logger
+
+import app.resource.resource  # type: ignore
 
 
 class WriteableLabel(QLabel):
@@ -18,8 +20,7 @@ class WriteableLabel(QLabel):
         self.drawing = False  #
         self.start = False
 
-        markImgFilePath = Path(__file__).parent.parent.parent / "AppData/mark.png"
-        self.markPixmap = QPixmap(str(markImgFilePath))
+        self.markPixmap = QPixmap(":/ppw/mark.png")
         self.markFlag = False
         self.unWriteable = False  # 不可编辑
 

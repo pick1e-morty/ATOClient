@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="ppw">
+    <file>mark.png</file>
+  </qresource>
+  <qresource prefix="mainwindow">
+    <file>Robot_black.png</file>
+    <file>logo.png</file>
+  </qresource>
+</RCC>

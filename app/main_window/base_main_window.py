@@ -1,6 +1,5 @@
 # coding:utf-8
 import sys
-from pathlib import Path
 
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from PyQt5.QtGui import QIcon
@@ -9,6 +8,8 @@ from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import (NavigationInterface, NavigationItemPosition, MessageBox,
                             isDarkTheme, NavigationAvatarWidget, SplashScreen)
 from qframelesswindow import FramelessWindow, StandardTitleBar
+
+import app.resource.resource  # type: ignore
 
 
 class Widget(QFrame):
@@ -66,7 +67,7 @@ class BaseMainWindow(FramelessWindow):
         # add custom widget to bottom
         self.navigationInterface.addWidget(
             routeKey='avatar',
-            widget=NavigationAvatarWidget('OffLine', str(Path(__file__).parent / "resource/Robot_black.png")),
+            widget=NavigationAvatarWidget('OffLine', ":/mainwindow/Robot_black.png"),
             onClick=self.showMessageBox,
             position=NavigationItemPosition.BOTTOM,
         )
@@ -87,7 +88,7 @@ class BaseMainWindow(FramelessWindow):
         # self.navigationInterface.setCollapsible(False)
 
     def initWindow(self):
-        self.setWindowIcon(QIcon('resource/logo.png'))
+        self.setWindowIcon(QIcon(":/mainwindow/logo.png"))
         # self.setWindowTitle('PyQt-Fluent-Widgets')
         self.titleBar.setAttribute(Qt.WA_StyledBackground)
 
@@ -129,8 +130,6 @@ class BaseMainWindow(FramelessWindow):
 
     def loadSplashScreen(self):
         # 加载启动屏幕
-        logoFilePath = Path(__file__).parent / "resource/logo.png"
-        self.setWindowIcon(QIcon(str(logoFilePath)))
         self.splashScreen = SplashScreen(self.windowIcon(), self)
         formsWidth = self.size().width()
         formsHeigth = self.size().height()
@@ -153,7 +152,7 @@ if __name__ == '__main__':
     forms = BaseMainWindow()
     forms.show()
     forms.stackWidget.setCurrentIndex(1)
-    app.exec_()
+    sys.exit(app.exec_())
 
 # 把主题作者写的导航窗体demo作为我窗体的base，我继承一下
 #
