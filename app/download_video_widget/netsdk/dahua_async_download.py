@@ -238,6 +238,11 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
         logger.error(f"{threadName}的关闭下载句柄线程超时")
     logger.info(f"{deviceAddress}下载子进程关闭")
 
+    if statusReportThreadInstance.is_alive():
+        threadName = stopDownloadThreadInstance.getName()
+        logger.error(f"{threadName}的关闭下载句柄线程超时")
+    logger.info(f"{deviceAddress}下载子进程关闭")
+
 
 if __name__ == "__main__":
     from _testLoginConfig import testUserConfig

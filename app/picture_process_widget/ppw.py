@@ -2,22 +2,16 @@
 # 整个mainwindow.hide掉，然后dialog是全屏的，dialog里有一个退出按钮，可以选择画圆还是画矩形，还有颜色控制
 # 先来看看label开图片的样子吧，哦，外面还有scrollArea
 import sys
-from pathlib import Path
 
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QWidget, QGridLayout, QApplication, QLabel, QScrollArea, QGroupBox
+from PyQt5.QtWidgets import QApplication, QLabel
 from loguru import logger
-from qfluentwidgets import ScrollArea, PushButton
 
 from app.picture_process_widget.base_ppw import BasePPW
 from app.picture_process_widget.utils.tool_box import ToolsGroupBox
 from app.picture_process_widget.utils.writeable_label import WriteableLabel
 from app.utils.project_path import DVW_DOWNLOAD_VIDEO_PATH
-from app.utils.tools import removeDir
-
-# dvw下载后的图片存放地址，ppw要从这个文件夹中取子级文件夹中的图片
-picDirPath = Path(__file__).parent.parent.parent.parent / "pic"
 
 
 class PPWclass(BasePPW):  # TODO 这个基类的名字记得统一
@@ -25,10 +19,10 @@ class PPWclass(BasePPW):  # TODO 这个基类的名字记得统一
         super().__init__(parent)
         self.setObjectName("PPW_Widget")
 
-        self.color = Qt.black
+        self.color = Qt.red
         self.penWidth = 3
         self.savePenWidth = 3
-        self.shape = "矩形"
+        self.shape = "圆形"
         self.picSuffixTuple = (".jpeg", ".jpg")
 
         self.markedImgLabel = None

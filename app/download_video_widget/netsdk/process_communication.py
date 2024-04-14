@@ -37,7 +37,6 @@ class StatusReportThread(threading.Thread):
             with self.statusReportListCondition:  # 这个锁只是为了 检空 的等待
                 if not self.statusReportList:
                     if self.producerDone is True:  # 状态列表是空的，且 状态生成结束标志 为真，就说明可以结束了
-                        logger.info("statusReportThread子线程正常关闭")
                         logger.info(f"{self.getName()}的statusReportThread子线程正常关闭")
                         break
                     self.statusReportListCondition.wait()  # 列表是空的，但状态生成结束标志为假，则线程阻塞等待，不消耗资源，没有sleep
@@ -48,4 +47,3 @@ class StatusReportThread(threading.Thread):
                     self.statusReportList.clear()
                     self.downloadResultListCondition.notify()
 
-# TODO StopDownloadHandleThread应该可以放到这里了
