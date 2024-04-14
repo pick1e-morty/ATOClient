@@ -188,11 +188,7 @@ class DVWclass(BaseDVW):
         负责开启进程池的线程，最大进程数量要做参数化的(UI那边要限制最多是cpu_count个)
         """
 
-        ipNum = len(downloadArgs.keys())
-        if ipNum >= 8:
-            maxWorkers = 8  # 大于8个ip就开8个进程池，不然就开对应数量的就好了
-        else:
-            maxWorkers = ipNum
+        maxWorkers = min(8, len(downloadArgs.keys()))
         with ProcessPoolExecutor(max_workers=maxWorkers) as executor:
             for devIP, devArgStruct in downloadArgs.items():
                 if devArgStruct.devType == "dahua":

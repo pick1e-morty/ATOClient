@@ -11,6 +11,7 @@ from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg
 from loguru import logger
 
 from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
+from app.download_video_widget.netsdk.process_communication import StatusReportThread
 from app.download_video_widget.utils.video2pic import tsPic
 
 dahuaClient = None
@@ -36,14 +37,16 @@ class StopDownloadHandleThread(threading.Thread):
         一个是字典的key，另一个是列表元素的index
         """
         threading.Thread.__init__(self)
-        self.producerDone = False  # 线程结束的标志
+        self.producerDone = False  # 线程可以结束了的标志
         self.downloadHandleDict = downloadHandleDict  # 下载句柄字典
         self.downloadHandleDictCondition = downloadHandleDictCondition  # 下载句柄字典的锁
         self.updateDownloadStatusFun = updateDownloadStatusFun  # 统一上报下载状态的函数
 
     def setDone(self):
         # 生产者发出完毕信号，也就是主线程那边下载句柄传完了
-        self.producerDone = True
+        self.producerDone = True  # 控制线程关闭的标志
+
+    # TODO 改动太多了，估计要开类了，不然海康那边的代码同步起来太费劲了
 
     def run(self):
         while True:
@@ -71,14 +74,14 @@ class StopDownloadHandleThread(threading.Thread):
                     except Exception as e:
                         logger.error(f"{savePath}转换失败，错误代码{type(e).__name__}\n如果tsPic那边能处理好，那这个log是不应该出现的")
                     status = "下载成功"
-                    logger.success(f"下载ID {downloadHandle} {status}")
+                    logger.success(f"下载ID {downloadHandle} {savePath} {status}")
                     self.updateDownloadStatusFun(iNDEX, status)
                     with self.downloadHandleDictCondition:  # 下载成功后就可以删掉这个句柄了
                         self.downloadHandleDict.pop(downloadHandle)
                 else:
                     if TimeoutNum == 0:
                         status = "下载超时"
-                        logger.error(f"下载ID {downloadHandle} {status}")
+                        logger.error(f"下载ID {downloadHandle} {savePath} {status}")
                         self.updateDownloadStatusFun(iNDEX, status)
                         with self.downloadHandleDictCondition:  # 下载超时需要抛出句柄
                             self.downloadHandleDict.pop(downloadHandle)
@@ -86,7 +89,7 @@ class StopDownloadHandleThread(threading.Thread):
                         TimeoutNum -= 1
                         with self.downloadHandleDictCondition:
                             self.downloadHandleDict[downloadHandle] = [savePath, iNDEX, TimeoutNum]
-                        logger.error(f"下载ID {downloadHandle}，下载进度 {downloadPos}，剩余超时次数 {TimeoutNum}")
+                        logger.trace(f"下载ID {downloadHandle}，文件地址 {savePath}，下载进度 {downloadPos}，剩余超时次数 {TimeoutNum}")
             sleep(0.5)
 
 
@@ -102,23 +105,28 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
         跟下载参数downloadArg有关的都是往下载状态表格上报的
         跟sdkClient有关的都是往下载进度表格上报的，因为sdkClient是下载进度表格的单位
         """
-
-        downloadResultList.append([widgetEnum, deviceAddress, f_iNDEX, f_status])
         logger.trace(f"{widgetEnum}更新状态：{deviceAddress} {f_iNDEX} {f_status}")  # TODO UI那边又出现上报数量不对等的情况，不知道是关闭句柄线程的问题还是什么
-        with downloadResultListCondition:  # 用这个log应该就能查清楚了
-            downloadResultListCondition.notify()
+        with statusReportListCondition:
+            statusReportList.append([widgetEnum, deviceAddress, f_iNDEX, f_status])
 
-    def execute_operation(func, funcArgs, sucessText, errorText, needExit=True, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
+    statusReportList = []  # 状态上报的list，线程同步,进程通信缓冲区
+    # statusReportList的结构[widgetEnum, deviceAddress, f_iNDEX, f_status]
+    statusReportListCondition = threading.Condition()
+    statusReportThreadInstance = StatusReportThread(statusReportList, statusReportListCondition, downloadResultList, downloadResultListCondition)
+    statusReportThreadInstance.setName(str(devArgs.devIP))  # 给线程加个名字(以IP为单位)，查错的时候方便点
+    statusReportThreadInstance.start()
+
+    def execute_operation(func, funcArgs, _sucessText, _errorText, needExit=True, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
         # TDOO 就是这里，改造为装饰器，一般情况下只需要传两个参数就好了
         # 目前都是执行的sdk的方法，且上报状态也都是发给下载进度表格的
         try:
             executeResult = func(*funcArgs)
-            logger.info(f"{deviceAddress}{sucessText}")
-            updateDownloadStatusFun(0, sucessText, widgetEnum)
+            logger.info(f"{deviceAddress}{_sucessText}")
+            updateDownloadStatusFun(0, _sucessText, widgetEnum)
             return executeResult
         except DHNetSDKException as e:
-            logger.error(f"{deviceAddress}{errorText},{type(e).__name__}")
-            errorStr = type(e).__name__ + errorText
+            logger.error(f"{deviceAddress}{_errorText},{type(e).__name__}")
+            errorStr = type(e).__name__ + _errorText
             updateDownloadStatusFun(0, errorStr, widgetEnum)
             if needExit:
                 sys.exit(1)  # 有些方法执行后还不能立即退出。不过这个判断也很可能用不上
@@ -212,6 +220,13 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     stopDownloadThreadInstance.setDone()
     stopDownloadThreadInstance.join(10)  # 超时10秒，
     if stopDownloadThreadInstance.is_alive():
+        logger.error("StopDownloadHandleThread子线程关闭超时")
+
+    with statusReportListCondition:  #
+        statusReportListCondition.notify()
+    statusReportThreadInstance.setDone()
+    statusReportThreadInstance.join(10)  # 超时10秒，
+    if statusReportThreadInstance.is_alive():
         logger.error("StopDownloadHandleThread子线程关闭超时")
 
     execute_operation(dahuaClient.logout, [userID], "登出成功", "登出失败")
