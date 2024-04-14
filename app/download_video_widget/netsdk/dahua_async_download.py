@@ -11,7 +11,6 @@ from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg
 from loguru import logger
 
 from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
-from app.download_video_widget.netsdk.process_communication import StatusReportThread
 from app.download_video_widget.utils.video2pic import tsPic
 
 dahuaClient = None
@@ -93,10 +92,14 @@ class StopDownloadHandleThread(threading.Thread):
             sleep(0.5)
 
 
-def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgStruct):
+# downloaderStatusQueue = None
+
+
+def dahuaDownloader(devArgs: DevLoginAndDownloadArgStruct):
     # 参数还要加，是否查找录像，日志保存地址，
 
     deviceAddress = None  # 记录下整个py文件内没有变化的ip地址，这样就不用每次都传了
+    # global downloaderStatusQueue  # 由进程池的initializer进行初始化
 
     def updateDownloadStatusFun(f_iNDEX, f_status, widgetEnum: DVWTableWidgetEnum = DVWTableWidgetEnum.DOWNLOAD_STATUS_TABLE):
         """
@@ -106,15 +109,15 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
         跟sdkClient有关的都是往下载进度表格上报的，因为sdkClient是下载进度表格的单位
         """
         logger.trace(f"{widgetEnum}更新状态：{deviceAddress} {f_iNDEX} {f_status}")  # TODO UI那边又出现上报数量不对等的情况，不知道是关闭句柄线程的问题还是什么
-        with statusReportListCondition:
-            statusReportList.append([widgetEnum, deviceAddress, f_iNDEX, f_status])
+        downloaderStatusQueue.put([widgetEnum, deviceAddress, f_iNDEX, f_status])
+        # 缓冲区被我注释掉了，先看看这个queue速度咋样
 
-    statusReportList = []  # 状态上报的list，线程同步,进程通信缓冲区
-    # statusReportList的结构[widgetEnum, deviceAddress, f_iNDEX, f_status]
-    statusReportListCondition = threading.Condition()
-    statusReportThreadInstance = StatusReportThread(statusReportList, statusReportListCondition, downloadResultList, downloadResultListCondition)
-    statusReportThreadInstance.setName(str(devArgs.devIP))  # 给线程加个名字(以IP为单位)，查错的时候方便点
-    statusReportThreadInstance.start()
+    # statusReportList = []  # 状态上报的list，线程同步,进程通信缓冲区
+    # # statusReportList的结构[widgetEnum, deviceAddress, f_iNDEX, f_status]
+    # statusReportListCondition = threading.Condition()
+    # statusReportThreadInstance = StatusReportThread(statusReportList, statusReportListCondition, downloaderStatusQueue)
+    # statusReportThreadInstance.setName(str(devArgs.devIP))  # 给线程加个名字(以IP为单位)，查错的时候方便点
+    # statusReportThreadInstance.start()
 
     def execute_operation(func, funcArgs, _sucessText, _errorText, needExit=True, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
         # TDOO 就是这里，改造为装饰器，一般情况下只需要传两个参数就好了
@@ -222,12 +225,12 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     if stopDownloadThreadInstance.is_alive():
         logger.error("StopDownloadHandleThread子线程关闭超时")
 
-    with statusReportListCondition:  #
-        statusReportListCondition.notify()
-    statusReportThreadInstance.setDone()
-    statusReportThreadInstance.join(10)  # 超时10秒，
-    if statusReportThreadInstance.is_alive():
-        logger.error("StopDownloadHandleThread子线程关闭超时")
+    # with statusReportListCondition:  #
+    #     statusReportListCondition.notify()
+    # statusReportThreadInstance.setDone()
+    # statusReportThreadInstance.join(10)  # 超时10秒，
+    # if statusReportThreadInstance.is_alive():
+    #     logger.error("StopDownloadHandleThread子线程关闭超时")
 
     execute_operation(dahuaClient.logout, [userID], "登出成功", "登出失败")
     execute_operation(dahuaClient.logclose, [], "关闭日志成功", "关闭日志失败")
@@ -238,16 +241,15 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
         logger.error(f"{threadName}的关闭下载句柄线程超时")
     logger.info(f"{deviceAddress}下载子进程关闭")
 
-    if statusReportThreadInstance.is_alive():
-        threadName = stopDownloadThreadInstance.getName()
-        logger.error(f"{threadName}的关闭下载句柄线程超时")
-    logger.info(f"{deviceAddress}下载子进程关闭")
+    # if statusReportThreadInstance.is_alive():
+    #     threadName = stopDownloadThreadInstance.getName()
+    #     logger.error(f"{threadName}的关闭下载句柄线程超时")
+    # logger.info(f"{deviceAddress}下载子进程关闭")
+    # return None
 
 
 if __name__ == "__main__":
     from _testLoginConfig import testUserConfig
 
-    manager = multiprocessing.Manager()
-    t_downloadResultList = manager.list()
-    t_downloadResultListCondition = manager.Condition()
-    dahuaDownloader(t_downloadResultList, t_downloadResultListCondition, testUserConfig)
+    queue = multiprocessing.Queue()
+    dahuaDownloader(queue, testUserConfig)

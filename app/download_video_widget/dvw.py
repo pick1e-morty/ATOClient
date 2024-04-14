@@ -1,8 +1,9 @@
 import multiprocessing
+import queue
 import sys
 import threading
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from multiprocessing.managers import ListProxy, ConditionProxy
 from pathlib import Path
@@ -17,12 +18,18 @@ from qfluentwidgets import MessageBox, InfoBar, InfoBarPosition
 
 from app.download_video_widget.base_dvw import BaseDVW
 from app.download_video_widget.dvw_define import DownloadArg, DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
-from app.download_video_widget.netsdk.dahua_async_download import dahuaDownloader
-from app.download_video_widget.netsdk.haikang_async_download import HaikangDownloader
+from app.download_video_widget.netsdk.downloader_factory import DownloaderFactory
 from app.download_video_widget.utils.progress_bar import PercentProgressBar
 from app.esheet_process_widget.epw_define import ExcelFileListWidgetItemDataStruct
 from app.utils.project_path import DVW_DOWNLOAD_FILE_SUFFIX, DVW_CONVERTED_FILE_SUFFIX, DVW_DATETIME_FORMAT, DVW_DOWNLOAD_VIDEO_PATH
 from app.utils.tools import findItemTextInTableWidgetRow, AlignCenterQTableWidgetItem, removeDir
+
+_DVW_QUEUE = multiprocessing.Queue()  # 非mananger通信对象速度更快一点，
+
+
+def _Init_Downloader_Workspace(sharedQueue):
+    global downloaderStatusQueue
+    downloaderStatusQueue = sharedQueue  # 复制队列实例的引用
 
 
 class DVWclass(BaseDVW):
@@ -117,24 +124,21 @@ class DVWclass(BaseDVW):
 
     def getDownloadResultThread(self):
         """
-        线程不断的读取用于子进程通信的manager().list()，读到了就发送信号，信号再连槽函数，槽函数负责更改窗体
-        读不到就等（阻塞，省电doge）
-        之所以不用Event是因为我进行了一个clear操作，虽然clear方法是进程安全(由manager保障)的原子操作方法(内置方法保障)，但list没有提供 复制列表的 原子操作的 方法。
-        我把列表的副本拿下来，然后把锁丢掉，这样我更改窗体的耗时操作就不会影响到子进程后续对通信列表的append操作
-        这样这个函数代码的逻辑操作需要确保我拿list副本的时候是进程安全的，所以用了contidion，没内容还能阻塞一下
-        """
 
+        """
         while True:
-            with self.downloadResultListCondition:  # 查和改的操作都要在锁下进行。如果某个对列表的操作不在锁下，就不能保证是进程安全的了，python随时有可能把权限交出去
-                if not self.downloadResultList:
-                    if self.downloadDone is True:
-                        logger.info("getDownloadResultThread子线程正常关闭")
-                        break
-                    self.downloadResultListCondition.wait()
-                result_List = self.downloadResultList[:]
-                self.downloadResultList[:] = []  # ListProxy没有提供clear方法。它的方法定义在multiprocess.managers.BaseListProxy
-            for resultStruct in result_List:  # 这一步是极有可能存在速度瓶颈的，应该创一个独立缓冲区来保存下载结果，然后慢慢地让窗体更新数据。毕竟生产者(进程池)有8个，而消费者(窗体更新UI)只有一个。
-                self.downloadStatusChange.emit(resultStruct)  # 如果堵在这会很严重，不仅子进程下载结果发不过来，连下载进度都会被推迟。如果把阻塞都删掉呢？
+            if self.downloaderStatusQueue.empty() and self.downloadDone is True:
+                logger.info("getDownloadResultThread子线程正常关闭")
+                break
+            result_List = []
+            try:
+                result_List.append(self.downloaderStatusQueue.get(block=True, timeout=2))  # 第一个结果拿到后，就使劲取，直到队列为空
+                while not self.downloaderStatusQueue.empty():
+                    result_List.append(self.downloaderStatusQueue.get_nowait())
+            except queue.Empty as e:
+                logger.trace(f"queue一次超时{str(e)}")
+            for resultStruct in result_List:
+                self.downloadStatusChange.emit(resultStruct)
 
     def updateDownloadStatusUI(self, resultList):
         """
@@ -188,26 +192,30 @@ class DVWclass(BaseDVW):
         负责开启进程池的线程，最大进程数量要做参数化的(UI那边要限制最多是cpu_count个)
         """
 
-        maxWorkers = min(8, len(downloadArgs.keys()))
-        with ProcessPoolExecutor(max_workers=maxWorkers) as executor:
+        maxWorkers = min(multiprocessing.cpu_count(), len(downloadArgs.keys()))  # 要么是cpu核心数量的进程数量，要么是下载参数数量的进程数量。
+        with ProcessPoolExecutor(max_workers=maxWorkers, initializer=_Init_Downloader_Workspace, initargs=(_DVW_QUEUE,)) as executor:
+            tasks = []
             for devIP, devArgStruct in downloadArgs.items():
-                if devArgStruct.devType == "dahua":
-                    executor.submit(dahuaDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
-                elif devArgStruct.devType == "haikang":
-                    executor.submit(HaikangDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
-                else:
+                try:
+                    downloader = DownloaderFactory.create_product(devArgStruct.devType)
+                except ValueError as e:
                     logger.error(f"未知设备类型{devArgStruct.devType}")
+                else:
+                    tasks.append(executor.submit(downloader, devArgStruct))
+            for future in as_completed(tasks):
+                try:
+                    future.result()
+                except Exception as e:
+                    logger.error(f"某个downloader报错了，{str(e)}")
 
-        with self.downloadResultListCondition:  # 如果没有一个下载结果传过去的话，就需要手动解锁一下，让子线程顺利关闭
-            self.downloadResultListCondition.notify()
+        # 显式的确保所有进程都彻底结束了
+
         self.downloadDone = True  # 开启关闭标志，getDownloadResultThreadInstance线程可以关了
         self.getDownloadResultThreadInstance.join(10)  # 没关的话再等10秒
         if self.getDownloadResultThreadInstance.is_alive():
             logger.error("getDownloadResultThread子线程关闭超时")
 
-        self.manager.shutdown()  # 上面关完了，管理器也需要关
         logger.info("multiprocessing.Manager已关闭")
-
         self.downloadStatusDone.emit(True)
 
     def handleDownloadList(self, eflw_ItemDataList: List[ExcelFileListWidgetItemDataStruct]):
@@ -251,9 +259,14 @@ class DVWclass(BaseDVW):
         开一个不断从上面那个list中拿结果得线程
         再开一个启动下载的进程池的线程
         """
-        self.manager = multiprocessing.Manager()
-        self.downloadResultList = self.manager.list()
-        self.downloadResultListCondition = self.manager.Condition()
+        global _DVW_QUEUE
+        self.downloaderStatusQueue = _DVW_QUEUE
+        while True:
+            if not self.downloaderStatusQueue.empty():
+                value = self.downloaderStatusQueue.get_nowait()
+                logger.error(f"初始化队列的时候居然不是空的，程序有bug，数据为{value}")
+            else:
+                break
         self.downloadDone = False  # 初始化线程关闭标志
         self.getDownloadResultThreadInstance = threading.Thread(target=self.getDownloadResultThread)  #
         self.getDownloadResultThreadInstance.start()
