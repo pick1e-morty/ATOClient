@@ -27,9 +27,13 @@ from app.utils.tools import findItemTextInTableWidgetRow, AlignCenterQTableWidge
 _DVW_QUEUE = multiprocessing.Queue()  # 非mananger通信对象速度更快一点，
 
 
+#
+#
 def _Init_Downloader_Workspace(sharedQueue):
+    print("downloader加载器加载完成")
     global downloaderStatusQueue
     downloaderStatusQueue = sharedQueue  # 复制队列实例的引用
+    print(downloaderStatusQueue, sharedQueue)
 
 
 class DVWclass(BaseDVW):
@@ -193,7 +197,7 @@ class DVWclass(BaseDVW):
         """
 
         maxWorkers = min(multiprocessing.cpu_count(), len(downloadArgs.keys()))  # 要么是cpu核心数量的进程数量，要么是下载参数数量的进程数量。
-        with ProcessPoolExecutor(max_workers=maxWorkers, initializer=_Init_Downloader_Workspace, initargs=(_DVW_QUEUE,)) as executor:
+        with ProcessPoolExecutor(max_workers=maxWorkers) as executor:
             tasks = []
             for devIP, devArgStruct in downloadArgs.items():
                 try:
@@ -201,12 +205,12 @@ class DVWclass(BaseDVW):
                 except ValueError as e:
                     logger.error(f"未知设备类型{devArgStruct.devType}")
                 else:
-                    tasks.append(executor.submit(downloader, devArgStruct))
+                    tasks.append(executor.submit(downloader, _DVW_QUEUE, devArgStruct))
             for future in as_completed(tasks):
                 try:
                     future.result()
                 except Exception as e:
-                    logger.error(f"某个downloader报错了，{str(e)}")
+                    logger.error(f"某个downloader报错了，{str(e)}")  # 暂时不对downloader进行定位标记
 
         # 显式的确保所有进程都彻底结束了
 
@@ -254,19 +258,14 @@ class DVWclass(BaseDVW):
             fileNumItem = AlignCenterQTableWidgetItem(str(fileNum))  # 文件数量
             self.ui.fileCount_TW.setItem(row, 1, fileNumItem)
 
-        """
-        开个进程通信的list和确保list进程安全的condition。
-        开一个不断从上面那个list中拿结果得线程
-        再开一个启动下载的进程池的线程
-        """
         global _DVW_QUEUE
         self.downloaderStatusQueue = _DVW_QUEUE
-        while True:
-            if not self.downloaderStatusQueue.empty():
-                value = self.downloaderStatusQueue.get_nowait()
-                logger.error(f"初始化队列的时候居然不是空的，程序有bug，数据为{value}")
-            else:
-                break
+        # while True:
+        #     if not self.downloaderStatusQueue.empty():
+        #         value = self.downloaderStatusQueue.get_nowait()
+        #         logger.error(f"初始化队列的时候居然不是空的，程序有bug，数据为{value}")
+        #     else:
+        #         break
         self.downloadDone = False  # 初始化线程关闭标志
         self.getDownloadResultThreadInstance = threading.Thread(target=self.getDownloadResultThread)  #
         self.getDownloadResultThreadInstance.start()

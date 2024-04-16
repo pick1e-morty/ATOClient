@@ -92,14 +92,10 @@ class StopDownloadHandleThread(threading.Thread):
             sleep(0.5)
 
 
-# downloaderStatusQueue = None
-
-
-def dahuaDownloader(devArgs: DevLoginAndDownloadArgStruct):
+def dahuaDownloader(downloaderStatusQueue, devArgs: DevLoginAndDownloadArgStruct):
     # 参数还要加，是否查找录像，日志保存地址，
 
     deviceAddress = None  # 记录下整个py文件内没有变化的ip地址，这样就不用每次都传了
-    # global downloaderStatusQueue  # 由进程池的initializer进行初始化
 
     def updateDownloadStatusFun(f_iNDEX, f_status, widgetEnum: DVWTableWidgetEnum = DVWTableWidgetEnum.DOWNLOAD_STATUS_TABLE):
         """
@@ -109,6 +105,7 @@ def dahuaDownloader(devArgs: DevLoginAndDownloadArgStruct):
         跟sdkClient有关的都是往下载进度表格上报的，因为sdkClient是下载进度表格的单位
         """
         logger.trace(f"{widgetEnum}更新状态：{deviceAddress} {f_iNDEX} {f_status}")  # TODO UI那边又出现上报数量不对等的情况，不知道是关闭句柄线程的问题还是什么
+        print(downloaderStatusQueue)
         downloaderStatusQueue.put([widgetEnum, deviceAddress, f_iNDEX, f_status])
         # 缓冲区被我注释掉了，先看看这个queue速度咋样
 
