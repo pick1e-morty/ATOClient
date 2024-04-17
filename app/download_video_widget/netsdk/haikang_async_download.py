@@ -56,11 +56,11 @@ class StopDownloadHandleThread(threading.Thread):
                     self.downloadHandleDictCondition.wait()  # 如果下载句柄列表为空，但生产者没有发出完毕信号，则线程阻塞等待。
             for downloadHandle in list(self.downloadHandleDict.keys()):  # 迭代字典的时候不允许更改字典（下面进行了一个pop操作），所以做了个keys的副本
                 # 上面取key是原子的，但是list()不是原子操作。这正好，因为由于查询是个非常耗时的操作，查询的期间是不影响生产者继续添加句柄的。就等下一批再处理呗
+                downloadPos = 0
                 try:
                     downloadPos = haikangClient.stopDownLoadTimer(downloadHandle)
                 except HKNetSDKException as e:  # 除非把stopDownLoadTimer拆开，不然拿不到具体的信息，这块应该没什么大问题
                     logger.error(f"{downloadHandle}的stopDownLoadTimer执行失败，错误代码{str(type(e).__name__)}")
-                    continue
                 savePath, iNDEX, TimeoutNum = self.downloadHandleDict[downloadHandle]
                 if downloadPos == 100:
                     try:
@@ -68,20 +68,20 @@ class StopDownloadHandleThread(threading.Thread):
                     except DHPlaySDKException as e:
                         logger.error(f"{savePath}转换失败，错误代码{type(e).__name__}")
                     status = "下载成功"
-                    logger.success(f"下载ID {downloadHandle} {status}")
+                    logger.success(f"下载ID {downloadHandle} {savePath} {status}")
                     self.updateDownloadStatusFun(iNDEX, status)
                     with self.downloadHandleDictCondition:  # 下载成功后就可以删掉这个句柄了
                         self.downloadHandleDict.pop(downloadHandle)
                 elif downloadPos == 200:  # dahua那边没有这个200的错误码，
                     status = "下载异常"
-                    logger.error(f"下载ID {downloadHandle} {status}")
+                    logger.error(f"下载ID {downloadHandle} {savePath} {status}")
                     self.updateDownloadStatusFun(iNDEX, status)
                     with self.downloadHandleDictCondition:  # 下载异常需要抛出句柄
                         self.downloadHandleDict.pop(downloadHandle)
                 else:  # 应该只有0这一种数值
                     if TimeoutNum == 0:
                         status = "下载超时"
-                        logger.error(f"下载ID {downloadHandle} {status}")
+                        logger.error(f"下载ID {downloadHandle} {savePath} {status}")
                         self.updateDownloadStatusFun(iNDEX, status)
                         with self.downloadHandleDictCondition:  # 下载超时需要抛出句柄
                             self.downloadHandleDict.pop(downloadHandle)
@@ -89,7 +89,7 @@ class StopDownloadHandleThread(threading.Thread):
                         TimeoutNum -= 1
                         with self.downloadHandleDictCondition:
                             self.downloadHandleDict[downloadHandle] = [savePath, iNDEX, TimeoutNum]
-                        logger.error(f"下载ID {downloadHandle}，下载进度 {downloadPos}，剩余超时次数 {TimeoutNum}")
+                        logger.trace(f"下载ID {downloadHandle}，文件地址 {savePath}，下载进度 {downloadPos}，剩余超时次数 {TimeoutNum}")
             sleep(0.5)
 
 
@@ -106,23 +106,23 @@ def HaikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
         跟sdkClient有关的都是往下载进度表格上报的，因为sdkClient是下载进度表格的单位
         """
 
-        downloadResultList.append([widgetEnum, deviceAddress, f_iNDEX, f_status])
         logger.trace(f"{widgetEnum}更新状态：{deviceAddress} {f_iNDEX} {f_status}")  # TODO UI那边又出现上报数量不对等的情况，不知道是关闭句柄线程的问题还是什么
         with downloadResultListCondition:
+            downloadResultList.append([widgetEnum, deviceAddress, f_iNDEX, f_status])
             downloadResultListCondition.notify()
 
-    def execute_operation(func, funcArgs, sucessText, errorText, needExit=True, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
+    def execute_operation(func, funcArgs, _sucessText, _errorText, needExit=True, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
         # TDOO 就是这里，改造为装饰器，一般情况下只需要传两个参数就好了
         # 目前都是执行的sdk的方法，且上报状态也都是发给下载进度表格的
         try:
             executeResult = func(*funcArgs)
-            logger.info(f"{deviceAddress}{sucessText}")
-            updateDownloadStatusFun(0, sucessText, widgetEnum)
+            logger.info(f"{deviceAddress}{_sucessText}")
+            updateDownloadStatusFun(0, _sucessText, widgetEnum)
             return executeResult
-        except HKNetSDKException as e:
-            logger.error(f"{deviceAddress}{errorText},{type(e).__name__}")
-            errorStr = type(e).__name__ + errorText
-            updateDownloadStatusFun(0, errorStr, widgetEnum)
+        except HKNetSDKException as _e:
+            logger.error(f"{deviceAddress}{_errorText},{type(_e).__name__}")
+            _errorStr = type(_e).__name__ + _errorText
+            updateDownloadStatusFun(0, _errorStr, widgetEnum)
             if needExit:
                 sys.exit(1)  # 有些方法执行后还不能立即退出。不过这个判断也很可能用不上
 

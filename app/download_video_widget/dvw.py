@@ -2,7 +2,7 @@ import multiprocessing
 import sys
 import threading
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from multiprocessing.managers import ListProxy, ConditionProxy
 from pathlib import Path
@@ -17,8 +17,7 @@ from qfluentwidgets import MessageBox, InfoBar, InfoBarPosition
 
 from app.download_video_widget.base_dvw import BaseDVW
 from app.download_video_widget.dvw_define import DownloadArg, DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
-from app.download_video_widget.netsdk.dahua_async_download import dahuaDownloader
-from app.download_video_widget.netsdk.haikang_async_download import HaikangDownloader
+from app.download_video_widget.netsdk.downloader_factory import DownloaderFactory
 from app.download_video_widget.utils.progress_bar import PercentProgressBar
 from app.esheet_process_widget.epw_define import ExcelFileListWidgetItemDataStruct
 from app.utils.project_path import DVW_DOWNLOAD_FILE_SUFFIX, DVW_CONVERTED_FILE_SUFFIX, DVW_DATETIME_FORMAT, DVW_DOWNLOAD_VIDEO_PATH
@@ -190,13 +189,19 @@ class DVWclass(BaseDVW):
 
         maxWorkers = min(8, len(downloadArgs.keys()))
         with ProcessPoolExecutor(max_workers=maxWorkers) as executor:
+            tasks = []
             for devIP, devArgStruct in downloadArgs.items():
-                if devArgStruct.devType == "dahua":
-                    executor.submit(dahuaDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
-                elif devArgStruct.devType == "haikang":
-                    executor.submit(HaikangDownloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct)
+                try:
+                    downloader = DownloaderFactory.create_product(devArgStruct.devType)
+                except ValueError as e:
+                    logger.error(f"未知设备类型{devArgStruct.devType},实际报错代码{e}")
                 else:
-                    logger.error(f"未知设备类型{devArgStruct.devType}")
+                    tasks.append(executor.submit(downloader, self.downloadResultList, self.downloadResultListCondition, devArgStruct))
+            for future in as_completed(tasks):
+                try:
+                    future.result()
+                except Exception as e:
+                    logger.error(f"某个downloader报错了，{str(e)}")
 
         with self.downloadResultListCondition:  # 如果没有一个下载结果传过去的话，就需要手动解锁一下，让子线程顺利关闭
             self.downloadResultListCondition.notify()
