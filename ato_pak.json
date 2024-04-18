@@ -18,6 +18,10 @@
    "value": true
   },
   {
+   "optionDest": "icon_file",
+   "value": "C:/Users/Administrator/Documents/CodeProject/ATO/app/resource/_soft_icon.ico"
+  },
+  {
    "optionDest": "clean_build",
    "value": true
   },
@@ -55,11 +59,19 @@
   },
   {
    "optionDest": "datas",
-   "value": "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;app/AppData"
+   "value": "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/"
   },
   {
    "optionDest": "collect_binaries",
    "value": "UnifyNetSDK"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/Administrator/Documents/CodeProject/ATO/app/main_window/resource;app/main_window/resource/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/Administrator/Documents/CodeProject/ATO/app/app_setting_widget/resource;app/app_setting_widget/resource/"
   }
  ],
  "nonPyinstallerOptions": {

@@ -1,6 +1,7 @@
+import sys
 from pathlib import Path
 
-from PyQt5.QtCore import QRect, pyqtSignal, QRectF
+from PyQt5.QtCore import QRect, pyqtSignal, QRectF, Qt
 from PyQt5.QtGui import QPixmap, QPen, QPainter
 from PyQt5.QtWidgets import QLabel
 from loguru import logger
@@ -10,10 +11,15 @@ import app.resource.resource  # type: ignore
 
 class WriteableLabel(QLabel):
     markImage = pyqtSignal(QLabel)
+    colorDict = {"红色": Qt.red, "黄色": Qt.yellow, "白色": Qt.white, "黑色": Qt.black}
 
-    def __init__(self, palette, filePath, parent=None):
+    def __init__(self, getPaletteMethod, filePath, parent=None):
         super().__init__(parent)
-        self.palette = palette
+        self.getPaletteMethod = getPaletteMethod
+        self.color = None
+        self.penWidth = None
+        self.shape = None
+
         self.filePath = str(filePath)
         self.startPoint = None  # 圆形或矩形的开始坐标
         self.endPoint = None
@@ -42,17 +48,17 @@ class WriteableLabel(QLabel):
         y = self.startPoint.y() * heightScaleFactor
 
         painter = QPainter(pixmap)
-        painter.setPen(QPen(self.palette.color, self.palette.penWidth + widthScaleFactor))  # 设置画笔颜色和宽度,由于label被缩放了widthScaleFactor倍，所以线宽要给加回去，不然两个差别太大。
-        if self.palette.shape == "矩形":
+        painter.setPen(QPen(self.color, self.penWidth + widthScaleFactor))  # 设置画笔颜色和宽度,由于label被缩放了widthScaleFactor倍，所以线宽要给加回去，不然两个差别太大。
+        if self.shape == "矩形":
             painter.drawRect(QRectF(x, y, w, h))
-        elif self.palette.shape == "圆形":
+        elif self.shape == "圆形":
             painter.drawEllipse(QRectF(x, y, w, h))
         painter.end()
         filePath = Path(self.filePath)
         filePath.unlink(missing_ok=True)
         saveFilePath = filePath.with_suffix(".jpeg")
         saveResult = pixmap.save(str(saveFilePath), quality=100)
-        logger.trace(f"图片保存结果{saveResult}")
+        logger.debug(f"图片路径 {str(saveFilePath)} 保存结果{saveResult}")
         self.repaint()  # 把那个对号刷出来
 
     def paintEvent(self, event):
@@ -64,21 +70,29 @@ class WriteableLabel(QLabel):
         if self.markFlag:
             painter.drawPixmap(self.rect(), self.markPixmap)
         if self.drawing:
-            pen = QPen(self.palette.color, self.palette.penWidth)
+            pen = QPen(self.color, self.penWidth)
             painter.setPen(pen)
-            if self.palette.shape == "矩形":
+            if self.shape == "矩形":
                 painter.drawRect(QRect(self.startPoint, self.endPoint))
-            elif self.palette.shape == "圆形":
+            elif self.shape == "圆形":
                 painter.drawEllipse(QRect(self.startPoint, self.endPoint))
         elif self.startPoint is not None and self.endPoint is not None:  # 拖动结束后还要继续画
-            pen = QPen(self.palette.color, self.palette.penWidth)
+            pen = QPen(self.color, self.penWidth)
             painter.setPen(pen)
-            if self.palette.shape == "矩形":
+            if self.shape == "矩形":
                 painter.drawRect(QRect(self.startPoint, self.endPoint))
-            elif self.palette.shape == "圆形":
+            elif self.shape == "圆形":
                 painter.drawEllipse(QRect(self.startPoint, self.endPoint))
 
     def mousePressEvent(self, event):
+        color, penWidth, shape = self.getPaletteMethod()
+        try:
+            self.color = self.colorDict[color]
+        except KeyError:
+            logger.error(f"上层获取到的颜色{color}不在colorDict中")
+            sys.exit(1)
+        self.penWidth = float(penWidth)
+        self.shape = shape
         if not self.start and self.unWriteable is not True:
             self.startPoint = event.pos()
             self.start = True

@@ -1,11 +1,3 @@
-# 做一个月台配置模板
-
-# 查找录像的问题
-
-海康第一个总是查半天的，哦，把find关了就好了(开玩笑的哈)
-大华是错误，network_error
-不行呀，关了查找，下载还是network_error,看来跟find没关系啊
-
 # downloader的主流程抽象
 
 两个downloader的框架已经成型了，目前只有stopdownloadThread需要高度定制。
@@ -71,3 +63,7 @@ netsdk日志文件名要用ip来表示，不然log根本没法看
 
 requests.get没有开多线程，不过有超时两秒
 还有这个更新提示的 窗口显示节点 很奇怪，我觉得应该把checkUpdate放到splashScreen里面去做
+
+# EPW的UI显示功能提升
+
+在单号角度和月台角度的 表格列头中显示单号数量。ui的接口写好了但是没生效，在这个文件中app/esheet_process_widget/UI/table_widget.py

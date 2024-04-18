@@ -89,7 +89,7 @@ class StopDownloadHandleThread(threading.Thread):
                         TimeoutNum -= 1
                         with self.downloadHandleDictCondition:
                             self.downloadHandleDict[downloadHandle] = [savePath, iNDEX, TimeoutNum]
-                        logger.trace(f"下载ID {downloadHandle}，文件地址 {savePath}，下载进度 {downloadPos}，剩余超时次数 {TimeoutNum}")
+                        logger.debug(f"下载ID {downloadHandle}，文件地址 {savePath}，下载进度 {downloadPos}，剩余超时次数 {TimeoutNum}")
             sleep(0.5)
 
 
@@ -106,7 +106,7 @@ def HaikangDownloader(downloadResultList, downloadResultListCondition, devArgs: 
         跟sdkClient有关的都是往下载进度表格上报的，因为sdkClient是下载进度表格的单位
         """
 
-        logger.trace(f"{widgetEnum}更新状态：{deviceAddress} {f_iNDEX} {f_status}")  # TODO UI那边又出现上报数量不对等的情况，不知道是关闭句柄线程的问题还是什么
+        logger.debug(f"{widgetEnum}更新状态：{deviceAddress} {f_iNDEX} {f_status}")  # TODO UI那边又出现上报数量不对等的情况，不知道是关闭句柄线程的问题还是什么
         with downloadResultListCondition:
             downloadResultList.append([widgetEnum, deviceAddress, f_iNDEX, f_status])
             downloadResultListCondition.notify()

@@ -1,7 +1,9 @@
 import sys
+
 from PyQt5.QtCore import pyqtSlot, QEvent, Qt, QPropertyAnimation, QRect, QEasingCurve
 from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QAction, QSizePolicy)
 from qfluentwidgets import RoundMenu, Action, MenuAnimationType, FlowLayout, SwitchButton
+
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_EPW_Widget
 
 
@@ -203,9 +205,16 @@ class BaseEPW(QWidget):
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
+    from app.utils.forms_config import getFormsConfigDict
+    from app.utils.dev_config import YtBindDevConfigGenerate
 
     app = QApplication(sys.argv)  # 创建GUI应用程序
-    forms = BaseEPW()  # 创建窗体
-    forms.show()
+
+    w = QWidget()
+    w.devConfigGenerate = YtBindDevConfigGenerate()
+    w.formsConfigDict = getFormsConfigDict()
+
+    forms = BaseEPW(w)  # 创建窗体
+    w.show()
 
     sys.exit(app.exec_())

@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QApplication
 from app.main_window.main_window import MainWindow
 
 logger.remove()
-logger.add(sys.stdout, level="TRACE")
+logger.add(sys.stdout, level="DEBUG")
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
@@ -31,16 +31,6 @@ if __name__ == '__main__':
 
 # 现在的文件体积是200mb(两个sdk的dll能占100)，7z极限压缩后是50mb
 
-# pyinstaller --noconfirm --onedir --console --clean
-# --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py"
-# --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/"
-# --collect-binaries "UnifyNetSDK"  # 这个参数的对象居然是模块
-# "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
-
-# C:\Users\Administrator\Documents\CodeProject\ATO\app\AppData\soft_icon.ico
-# pyinstaller --noconfirm --onedir --contents-directory . --console --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK"  "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
-# 下面这个带图标
-# pyinstaller --noconfirm --onedir --contents-directory . --console --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK" -i "C:\Users\Administrator\Documents\CodeProject\ATO\app\resource\_soft_icon.ico" "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
-
+# pyinstaller --noconfirm --onedir --console --icon "C:/Users/Administrator/Documents/CodeProject/ATO/app/resource/_soft_icon.ico" --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/main_window/resource;app/main_window/resource/" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/app_setting_widget/resource;app/app_setting_widget/resource/"  "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
 
 # ATO-v5.0.0_x64_Portable.7z

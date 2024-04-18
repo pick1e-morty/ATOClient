@@ -143,7 +143,11 @@
         <widget class="CardWidget" name="CardWidget">
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="0" column="0">
-           <widget class="ListWidget" name="excelFile_LW"/>
+           <widget class="ListWidget" name="excelFile_LW">
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -232,12 +236,15 @@
         <widget class="CardWidget" name="CardWidget_3">
          <layout class="QGridLayout" name="gridLayout_3">
           <item row="0" column="0">
-           <widget class="TableWidget" name="excelData_TW">
+           <widget class="CustomTableWidget" name="excelData_TW">
             <property name="minimumSize">
              <size>
               <width>419</width>
               <height>0</height>
              </size>
+            </property>
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
             </property>
             <row>
              <property name="text">
@@ -281,7 +288,7 @@
             </row>
             <row>
              <property name="text">
-              <string>10</string>
+              <string>9</string>
              </property>
             </row>
             <column>
@@ -328,12 +335,15 @@
         <widget class="CardWidget" name="CardWidget_4">
          <layout class="QGridLayout" name="gridLayout_5">
           <item row="0" column="0">
-           <widget class="TableWidget" name="sameYTCount_TW">
+           <widget class="CustomTableWidget" name="sameYTCount_TW">
             <property name="minimumSize">
              <size>
               <width>336</width>
               <height>0</height>
              </size>
+            </property>
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
             </property>
             <row>
              <property name="text">
@@ -377,7 +387,7 @@
             </row>
             <row>
              <property name="text">
-              <string>10</string>
+              <string>9</string>
              </property>
             </row>
             <column>
@@ -524,9 +534,9 @@
    <header>qfluentwidgets</header>
   </customwidget>
   <customwidget>
-   <class>TableWidget</class>
+   <class>CustomTableWidget</class>
    <extends>QTableWidget</extends>
-   <header>qfluentwidgets</header>
+   <header>app.esheet_process_widget.UI.table_widget</header>
   </customwidget>
  </customwidgets>
  <resources/>

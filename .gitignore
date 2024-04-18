@@ -22,7 +22,6 @@ result.json
 # pyinstaller
 dist
 build
-/qodana.yaml
 
 # auto-py-exe
 output/

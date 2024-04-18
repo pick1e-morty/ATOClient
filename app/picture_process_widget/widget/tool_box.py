@@ -116,7 +116,8 @@ class ToolsGroupBox(QGroupBox):
     def initShape_CB(self):
         # 矩形，圆形
         # 向形状组合框中填充数据
-        self.shape_CB.addItems(["圆形", "矩形"])
+        shapeList = ["圆形", "矩形"]
+        self.shape_CB.addItems(shapeList)
         self.shape_CB.setCurrentIndex(0)
 
     def initPenWidth_LE(self):
@@ -125,9 +126,8 @@ class ToolsGroupBox(QGroupBox):
     def initColor_CB(self):
         # 向颜色组合框中填充数据F
         # 黑色，红色，黄色，白色
-        colorDict = {"红色": Qt.red, "黑色": Qt.black, "黄色": Qt.yellow, "白色": Qt.white}
-        for key, value in colorDict.items():
-            self.color_CB.addItem(key, userData=value)
+        colorList = ["红色", "黑色", "黄色", "白色"]
+        self.color_CB.addItems(colorList)
         self.color_CB.setCurrentIndex(0)
 
     def countingFile(self):

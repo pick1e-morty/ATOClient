@@ -1,17 +1,18 @@
-import sys
 import os
+import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List
 
 from PyQt5.QtCore import Qt, pyqtSlot, QEvent, QItemSelectionModel, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView
 from loguru import logger
-from typing import List
-from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
-from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, FileContentIsEmptyException, getSameYTCountTableWidgetData
-from app.esheet_process_widget.epw_define import SYTTWEnum, EDTWEnum, ExcelFileListWidgetItemDataStruct, SameYTCountTableWidgetItemDataStruct, ExcelDataTableWidgetItemDataStruct
-from app.esheet_process_widget.base_epw import BaseEPW
 from openpyxl.utils.exceptions import InvalidFileException
+from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
+
+from app.esheet_process_widget.base_epw import BaseEPW
+from app.esheet_process_widget.epw_define import SYTTWEnum, EDTWEnum, ExcelFileListWidgetItemDataStruct, SameYTCountTableWidgetItemDataStruct, ExcelDataTableWidgetItemDataStruct
+from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, FileContentIsEmptyException, getSameYTCountTableWidgetData
 
 
 # mainwindow那边定义logger，子组件这边共用的，不过是没有独立的作用域标记了，但文件地址也能说明问题了
@@ -24,11 +25,30 @@ class EPWclass(BaseEPW):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.setAcceptDrops(True)  # 开启拖拽
         self.init_ui()
+        self.ui.excelData_TW.rowCountChangedSignal.connect(self.on_excelData_TW_rowCountChanged)
+        self.ui.sameYTCount_TW.rowCountChangedSignal.connect(self.on_sameYTCount_TW_rowCountChanged)
 
         self.showErrorMsgBox.connect(self.showMessageBox)  # 多线程函数里有个需要弹窗的步骤，需要用个信号来调槽函数显示
 
     def init_ui(self):
         self.connect_keepShipNum_SPB_Action()
+
+    @pyqtSlot(int)
+    def on_excelData_TW_rowCountChanged(self, newRowCount):
+        # 当excelData_TW的行数改变时，触发该方法
+
+        countItem = self.ui.excelData_TW.horizontalHeaderItem(1)
+        print("我改变了数值")
+        countItem.setText(str(newRowCount))
+        self.ui.excelData_TW.setHorizontalHeaderItem(1, countItem)
+        # self.ui.excelData_TW.setHorizontalHeaderItem()
+
+    @pyqtSlot(int)
+    def on_sameYTCount_TW_rowCountChanged(self, newRowCount):
+        # 当excelData_TW的行数改变时，触发该方法
+        countItem = self.ui.sameYTCount_TW.horizontalHeaderItem(1)
+        countItem.setText(str(newRowCount))
+        # self.ui.excelData_TW.setHorizontalHeaderItem()
 
     @pyqtSlot(QListWidgetItem, QListWidgetItem)
     def on_excelFile_LW_currentItemChanged(self, current, previous):
@@ -292,6 +312,7 @@ class EPWclass(BaseEPW):
             event.accept()
         else:
             event.ignore()
+        super().dragEnterEvent(event)
 
     @pyqtSlot(QEvent)
     def dropEvent(self, event):
@@ -304,6 +325,7 @@ class EPWclass(BaseEPW):
             event.accept()
         else:
             event.ignore()
+        super().dropEvent(event)
 
     @pyqtSlot()
     def on_keepShipNum_SPB_clicked(self):
@@ -485,8 +507,8 @@ if __name__ == "__main__":  # 用于当前窗体测试
     app = QApplication(sys.argv)  # 创建GUI应用程序
 
     from PyQt5.QtWidgets import QWidget
-    from app.utils.forms_config import getFormsConfigDict, VdtStrNotUpperError, VdtDateTimeFormatError
-    from app.utils.dev_config import YtBindDevConfigGenerate, DevConfigFileNotFoundError, DevConfigFileInvalidError, DevConfigFileContentIsEmptyException, DevConfigFileContentIsInvalidException, DevConfigFileHandleErrorException
+    from app.utils.forms_config import getFormsConfigDict
+    from app.utils.dev_config import YtBindDevConfigGenerate, DevConfigFileContentIsInvalidException
 
     parentForTest = QWidget()
     parentForTest.formsConfigDict = getFormsConfigDict()

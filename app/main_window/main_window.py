@@ -4,7 +4,7 @@ from traceback import format_exception
 from types import TracebackType
 from typing import Type
 
-from PyQt5.QtCore import Qt, pyqtSlot, QUrl
+from PyQt5.QtCore import Qt, pyqtSlot, QUrl, QVersionNumber
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QApplication
 from configobj.validate import VdtTypeError, VdtValueError, ValidateError
@@ -49,22 +49,29 @@ class MainWindow(BaseMainWindow):
 
     def checkUpdate(self):
         try:
-            hasNewVersion = self.versionManager.hasNewVersion()
+            remoteVer = self.versionManager.getLatestVersionMethod()
         except Exception as e:
             logger.error(e)
             InfoBar.error('更新提示', '检查更新失败，请检查网络连接', duration=1500, position=InfoBarPosition.TOP, parent=self)
             return
-        if hasNewVersion:
+
+        remoteVersion, _suffixIndex = QVersionNumber.fromString(remoteVer[1:])  # 这个[1:]是在过滤版本号中的那个v字符
+        localVersion, _suffixIndex = QVersionNumber.fromString(self.versionManager.currentVersion[1:])
+        ignoreVersion, _suffixIndex = QVersionNumber.fromString(self.versionManager.ignoreVersion[1:])
+
+        if remoteVersion == ignoreVersion:
+            # 远程仓库版本等于要忽略的版本，没有新版本
+            InfoBar.info('更新提示', f'已忽略 {remoteVer} 版本更新', duration=1500, position=InfoBarPosition.TOP, parent=self)
+        elif localVersion == remoteVersion:
+            # 本地版本大于等于远程版本号，说明本地版本是最新的
+            InfoBar.success('更新提示', '当前已是最新版本', duration=1500, position=InfoBarPosition.TOP, parent=self)
+        else:
             newVersion, releaseTitle, releaseInfo = self.versionManager.getUpdateReleaseInfo()
             updateMsgBox = UpdateInfoMsgBox(releaseTitle, releaseInfo, self)
-            updateMsgBox.yesSignal.connect(lambda: QDesktopServices.openUrl(QUrl(RELEASE_URL)))  # 跳转到更新页面
-            updateMsgBox.ignoreButtonClicked.connect(lambda: self.write_ignore_version2Configini(newVersion))  # 写入忽略版本号到配置文件
-            updateMsgBox.yesButton.setText('打开更新页面')
-            updateMsgBox.cancelButton.setText('取消')
+            updateMsgBox.accepted.connect(lambda: QDesktopServices.openUrl(QUrl(RELEASE_URL)))  # 跳转到更新页面
+            updateMsgBox.ignoreSignal.connect(lambda: self.write_ignore_version2Configini(newVersion))  # 写入忽略版本号到配置文件
             updateMsgBox.raise_()
             updateMsgBox.exec()
-        else:
-            InfoBar.success('更新提示', '当前已是最新版本', duration=1500, position=InfoBarPosition.TOP, parent=self)
 
     def write_ignore_version2Configini(self, version):
         # 写入忽略版本号到配置文件

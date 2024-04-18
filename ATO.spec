@@ -9,7 +9,7 @@ a = Analysis(
     ['C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py'],
     pathex=[],
     binaries=binaries,
-    datas=[('C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData', 'AppData/')],
+    datas=[('C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData', 'AppData/'), ('C:/Users/Administrator/Documents/CodeProject/ATO/app/main_window/resource', 'app/main_window/resource/'), ('C:/Users/Administrator/Documents/CodeProject/ATO/app/app_setting_widget/resource', 'app/app_setting_widget/resource/')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -36,7 +36,6 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=['C:\\Users\\Administrator\\Documents\\CodeProject\\ATO\\app\\resource\\_soft_icon.ico'],
-    contents_directory='.',
 )
 coll = COLLECT(
     exe,

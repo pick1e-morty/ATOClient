@@ -6,7 +6,6 @@ import sys
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QLabel
-from loguru import logger
 
 from app.picture_process_widget.base_ppw import BasePPW
 from app.picture_process_widget.widget.tool_box import ToolsGroupBox
@@ -36,9 +35,6 @@ class PPWclass(BasePPW):
         hBoxLayout.insertStretch(4, 100)
         self.toolsGroupBox.dirPath_CB.currentIndexChanged.connect(self.changeDirPath)
         self.toolsGroupBox.colNum_CB.currentIndexChanged.connect(self.changeColShow)
-        self.toolsGroupBox.color_CB.currentIndexChanged.connect(self.changeColor)
-        self.toolsGroupBox.penWidth_LE.textChanged.connect(self.changePenWidth)
-        self.toolsGroupBox.shape_CB.currentIndexChanged.connect(self.changeShape)
         self.toolsGroupBox.delUnMarkImg_PB.clicked.connect(self.delUnMarkImg)
         self.toolsGroupBox.setHidden(True)  # 上面说初始化后先隐藏掉
 
@@ -66,13 +62,7 @@ class PPWclass(BasePPW):
 
         self.markedImgLabel = None  # 重置标记
         for index, filePath in enumerate(fileList):
-            picLabel = WriteableLabel(palette=self, filePath=filePath, parent=self.scrollAreaWidgetContents)  # 这样写应该是不符合“规定”的。
-            """因为widget的上级父类最终是它在ui上的父类，最初传的那个parent只是传递实例属性，实际上这个widget调整位置之后父类就被自动变更了。不知道我有没有说清楚
-            就比如现在这个WriteableLabel的父类就不是scrollAreaWidgetContents，而是scrollAreaWidgetContents下面的一个widget。
-            python没有类似c指针的变量传递方式，我不能直接修改一个变量的数值，而是会被新建变量所替换。所以我想的办法是直接把“某个父类”引用给这个labelWidget用作实例变量共享。
-            还有一种安全的实现思路，就是ppwInterface做事件拦截，判左键按下的动作，取鼠标坐标下的widget是不是WriteableLabel，如果是就把ppwInterface中的三个painter所需变量赋值给这个WriteableLabel。
-            但两者的代码量和逻辑复杂程度让我选择了前者。
-            """
+            picLabel = WriteableLabel(getPaletteMethod=self.getPalette, filePath=filePath, parent=self.scrollAreaWidgetContents)  # 这样写应该是不符合“规定”的。
             picLabel.markImage.connect(self.do_markImage)
             pixmap = QPixmap(str(filePath))
             scaled_pixmap = pixmap.scaledToWidth(new_width)
@@ -87,7 +77,6 @@ class PPWclass(BasePPW):
         elif self.markedImgLabel == label:  # 这说明用户重绘了，这时候不需要保存
             pass
         else:
-            logger.trace(f"保存图片{self.markedImgLabel.filePath}")
             self.markedImgLabel.savePixmap()
             self.toolsGroupBox.countingFile()  # 刷一下已标记的标签显示
             self.markedImgLabel = label
@@ -121,17 +110,11 @@ class PPWclass(BasePPW):
     def changeColShow(self, index):
         self.addPictureLabel()
 
-    @pyqtSlot(int)
-    def changeColor(self, index):
-        self.color = self.toolsGroupBox.color_CB.itemData(index)
-
-    @pyqtSlot(str)
-    def changePenWidth(self, str):
-        self.penWidth = float(str)
-
-    @pyqtSlot(int)
-    def changeShape(self, index):
-        self.shape = self.toolsGroupBox.shape_CB.itemText(index)
+    def getPalette(self) -> (str, str, str):
+        color = self.toolsGroupBox.color_CB.currentText()
+        penWidth = self.toolsGroupBox.penWidth_LE.text()
+        shape = self.toolsGroupBox.shape_CB.currentText()
+        return color, penWidth, shape
 
     @pyqtSlot(bool)
     def delUnMarkImg(self, clicked):

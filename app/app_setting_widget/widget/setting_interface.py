@@ -26,19 +26,19 @@ class SettingInterface(ScrollArea):
 
         # 表格处理
         self.epwGroup = SettingCardGroup("表格处理", self.scrollWidget)
-        self.autoDeleteUnConfiguredYTCard = SwitchSettingCard(FIF.TRANSPARENT, "自动删除未配置月台", "在设备配置文件未完全完善前尽量不要开启", configItem=None, parent=self.epwGroup)
+        self.autoDeleteUnConfiguredYTCard = SwitchSettingCard(FIF.DELETE, "自动删除未配置月台", "在设备配置文件未完全完善前尽量不要开启", configItem=None, parent=self.epwGroup)
 
         # 下载录像
         self.dvwGroup = SettingCardGroup("下载录像", self.scrollWidget)
-        self.checkVideoExistedCard = SwitchSettingCard(FIF.TRANSPARENT, "下载录像前检查录像是否存在", "由于某些厂商SDK没有提供异步查询，如果开启本功能后可能导致每个文件下载时长提高500ms左右，但可提供更为详细的下载记录（不建议启用此选项）", configItem=None, parent=self.dvwGroup)
-        self.autoConvertFormatCard = SwitchSettingCard(FIF.TRANSPARENT, "自动转换格式", "在程序下载结束之后会自动执行一次文件格式转换", configItem=None, parent=self.dvwGroup)
+        self.checkVideoExistedCard = SwitchSettingCard(FIF.SEARCH, "下载录像前检查录像是否存在", "由于某些厂商SDK没有提供异步查询，如果开启本功能后可能导致每个文件下载时长提高500ms左右，但可提供更为详细的下载记录（不建议启用此选项）", configItem=None, parent=self.dvwGroup)
+        self.autoConvertFormatCard = SwitchSettingCard(FIF.IMAGE_EXPORT, "自动转换格式", "在程序下载结束之后会自动执行一次文件格式转换", configItem=None, parent=self.dvwGroup)
 
         # 标记图片
         self.ppwGroup = SettingCardGroup("标记图片", self.scrollWidget)
-        self.colLabelNumCard = CustomCompactSpinBoxSettingCard(FIF.TRANSPARENT, "每行显示的图片数量", "最少1个，最大6个", minNum=1, maxNum=6, parent=self.ppwGroup)
-        self.penShapeCard = CustomComboBoxSettingCard(FIF.LANGUAGE, "画笔形状", "标记时的默认画笔形状", texts=["圆形", "矩形"], parent=self.ppwGroup)
-        self.penWidthCard = CustomSpinBoxSettingCard(FIF.TRANSPARENT, "画笔宽度", "标记时的默认画笔宽度,最小为1，最大为100", minNum=1, maxNum=100, parent=self.ppwGroup)
-        self.penColorCard = CustomOptionsSettingCard(FIF.TRANSPARENT, "画笔颜色", "标记时的默认画笔颜色", texts=["红色", "绿色", "蓝色", "黄色", "紫色", "黑色", "白色"], parent=self.ppwGroup)
+        self.colLabelNumCard = CustomCompactSpinBoxSettingCard(FIF.LAYOUT, "每行显示的图片数量", "最少1个，最大6个", minNum=1, maxNum=6, parent=self.ppwGroup)
+        self.penShapeCard = CustomComboBoxSettingCard(FIF.EDIT, "画笔形状", "标记时的默认画笔形状", texts=["圆形", "矩形"], parent=self.ppwGroup)
+        self.penWidthCard = CustomSpinBoxSettingCard(FIF.UNIT, "画笔宽度", "标记时的默认画笔宽度,最小为1，最大为100", minNum=1, maxNum=100, parent=self.ppwGroup)
+        self.penColorCard = CustomOptionsSettingCard(FIF.BACKGROUND_FILL, "画笔颜色", "标记时的默认画笔颜色", texts=["红色", "绿色", "蓝色", "黄色", "紫色", "黑色", "白色"], parent=self.ppwGroup)
 
         # 软件更新
         self.updateSoftwareGroup = SettingCardGroup("软件更新", self.scrollWidget)
