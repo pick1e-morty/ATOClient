@@ -35,7 +35,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['C:\\Users\\Administrator\\Documents\\CodeProject\\ATO\\app\\AppData\\soft_icon.ico'],
+    icon=['C:\\Users\\Administrator\\Documents\\CodeProject\\ATO\\app\\resource\\_soft_icon.ico'],
     contents_directory='.',
 )
 coll = COLLECT(

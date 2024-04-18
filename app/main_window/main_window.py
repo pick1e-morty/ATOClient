@@ -1,5 +1,4 @@
 import multiprocessing
-import os
 import sys
 from traceback import format_exception
 from types import TracebackType
@@ -10,9 +9,10 @@ from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QApplication
 from configobj.validate import VdtTypeError, VdtValueError, ValidateError
 from loguru import logger
-from qfluentwidgets import FluentIcon as FIF, Dialog, InfoBar, InfoBarPosition
+from qfluentwidgets import FluentIcon as FIF, Dialog, InfoBar, InfoBarPosition, NavigationItemPosition
 from qfluentwidgets import MessageBox
 
+from app.app_setting_widget.asw import ASWclass
 from app.download_video_widget.dvw import DVWclass
 from app.esheet_process_widget.epw import EPWclass
 from app.main_window.base_main_window import BaseMainWindow
@@ -36,6 +36,7 @@ class MainWindow(BaseMainWindow):
         self.load_devConfigGenerate()  # 载入设备配置生成器
         self.load_formsConfig()  # 载入窗体UI配置
         self.initUI()  # 初始化UI
+        self.init_Navigation()  # 刷新navigation的UI显示
 
         self.splashScreen.finish()
 
@@ -112,22 +113,30 @@ class MainWindow(BaseMainWindow):
 
     def initUI(self):
         self.epwInterface = EPWclass(self)
-        self.addSubInterface(self.epwInterface, FIF.DOCUMENT, '处理表格')
+        self.addSubInterface(self.epwInterface, FIF.DOCUMENT, '表格处理')
         self.dvwInterface = DVWclass(self)
         self.addSubInterface(self.dvwInterface, FIF.DOWNLOAD, '下载录像')
         self.ppwInterface = PPWclass(self)
         self.ppwInterface.addToolButtonInTitleBar(self.titleBar)
-        self.addSubInterface(self.ppwInterface, FIF.PHOTO, '修改图片')
+        self.addSubInterface(self.ppwInterface, FIF.PHOTO, '标记图片')
+        self.aswInterface = ASWclass(self)
+        self.addSubInterface(self.aswInterface, FIF.SETTING, '设置', NavigationItemPosition.BOTTOM)
         self.connectWidgetSignal()
+
+    def init_Navigation(self):
+        # 两个版本的界面导航栏初始化，这个是项目结构不够完美的产物。
+        widget = self.stackWidget.widget(0)
+        self.navigationInterface.setCurrentItem(widget.objectName())
+        self.stackWidget.setCurrentIndex(0)
 
     def connectWidgetSignal(self):
         # 连接组件信号
         self.dvwInterface.ui.startDownLoad_PB.clicked.connect(self.dvw_startDownLoad_PB_clicked)
         self.switchToWidget.connect(self.do_afterSwitchFun)  #
 
-    def do_afterSwitchFun(self, widget):
+    def do_afterSwitchFun(self, InterFaceWidget):
         # 当navigationInterface上的某个按钮被点击
-        if widget == self.ppwInterface:
+        if InterFaceWidget == self.ppwInterface:
             # 把toolsGroupBox显示出来
             self.showMaximized()  # 父类窗体最大化
             QApplication.processEvents()  # 立刻flush一下，不然后面的代码对整个窗体的size判断会有问题
@@ -136,7 +145,7 @@ class MainWindow(BaseMainWindow):
         else:
             # 隐藏toolsGroupBox
             self.ppwInterface.toolsGroupBox.setHidden(True)
-        if widget == self.dvwInterface:
+        if InterFaceWidget == self.dvwInterface:
             self.dvwInterface.closeTheDoorAndreleaseTheDog()  # 持续刷新 文件数量 表格组件。会立即扫描一次pic及其子级文件中的文件数量
         else:
             self.dvwInterface.openTheDoorAndCollectTheDog()  # 停止刷新
@@ -212,13 +221,4 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     forms = MainWindow()
     forms.show()
-    forms.splashScreen.finish()
-    forms.stackWidget.setCurrentIndex(1)
-
-    __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
-    testFile = os.path.join(__desktopPath, "0306.xlsx")
-    __filePath2 = os.path.join(__desktopPath, "0307.xlsx")
-    # forms.epwInterface.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
-    forms.epwInterface.addFilePathsToexcelFile_LWData([testFile, __filePath2])
-
     sys.exit(app.exec_())

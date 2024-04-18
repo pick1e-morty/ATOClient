@@ -9,8 +9,8 @@ from PyQt5.QtWidgets import QApplication, QLabel
 from loguru import logger
 
 from app.picture_process_widget.base_ppw import BasePPW
-from app.picture_process_widget.utils.tool_box import ToolsGroupBox
-from app.picture_process_widget.utils.writeable_label import WriteableLabel
+from app.picture_process_widget.widget.tool_box import ToolsGroupBox
+from app.picture_process_widget.widget.writeable_label import WriteableLabel
 from app.utils.project_path import DVW_DOWNLOAD_VIDEO_PATH
 
 

@@ -4,12 +4,12 @@ import sys
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QFrame, QStackedWidget, QHBoxLayout, QLabel, QWidget
-from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import (NavigationInterface, NavigationItemPosition, MessageBox,
-                            isDarkTheme, NavigationAvatarWidget, SplashScreen)
+                            NavigationAvatarWidget, SplashScreen)
 from qframelesswindow import FramelessWindow, StandardTitleBar
 
 import app.resource.resource  # type: ignore
+from app.utils.project_path import PROJECT_ROOT_PATH
 
 
 class Widget(QFrame):
@@ -40,9 +40,6 @@ class BaseMainWindow(FramelessWindow):
         self.navigationInterface = NavigationInterface(self, showMenuButton=True)
         self.stackWidget = QStackedWidget(self)
 
-        # create sub interface
-        self.settingInterface = Widget('Setting Interface', self)
-
         # initialize layout
         self.initLayout()
 
@@ -72,8 +69,6 @@ class BaseMainWindow(FramelessWindow):
             position=NavigationItemPosition.BOTTOM,
         )
 
-        self.addSubInterface(self.settingInterface, FIF.SETTING, 'Settings', NavigationItemPosition.BOTTOM)
-
         # !IMPORTANT: don't forget to set the default route key if you enable the return button
         # qrouter.setDefaultRouteKey(self.stackWidget, self.musicInterface.objectName())
 
@@ -81,8 +76,10 @@ class BaseMainWindow(FramelessWindow):
         self.navigationInterface.setExpandWidth(150)
 
         self.stackWidget.currentChanged.connect(self.onCurrentInterfaceChanged)
-        widget = self.stackWidget.widget(0)
-        self.navigationInterface.setCurrentItem(widget.objectName())
+
+        # widget = self.stackWidget.widget(0)       # base mainwindow这边因为对navigationInterface进行addSubInterface无法刷新navigationInterface的UI
+        # self.navigationInterface.setCurrentItem(widget.objectName())
+        # self.stackWidget.setCurrentIndex(0)
 
         # always expand
         # self.navigationInterface.setCollapsible(False)
@@ -97,7 +94,7 @@ class BaseMainWindow(FramelessWindow):
         self.resize(w // 2 + 200, h)
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
-        # self.setQss()
+        self.setQss()
 
     def addSubInterface(self, interface, icon, text: str, position=NavigationItemPosition.TOP, parent=None):
         """ add sub interface """
@@ -113,8 +110,9 @@ class BaseMainWindow(FramelessWindow):
         )
 
     def setQss(self):
-        color = 'dark' if isDarkTheme() else 'light'
-        with open(f'resource/{color}/demo.qss', encoding='utf-8') as f:
+        color = 'light'
+        hlPath = PROJECT_ROOT_PATH / "main_window"
+        with open(f'{str(hlPath)}/resource/{color}/main_window.qss', encoding='utf-8') as f:
             self.setStyleSheet(f.read())
 
     def switchTo(self, widget):
@@ -151,7 +149,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     forms = BaseMainWindow()
     forms.show()
-    forms.stackWidget.setCurrentIndex(1)
+    # forms.stackWidget.setCurrentIndex(1)
     sys.exit(app.exec_())
 
 # 把主题作者写的导航窗体demo作为我窗体的base，我继承一下

@@ -3,7 +3,7 @@ from pathlib import Path
 """
 本文件定义的路径最好紧跟mkdir
 """
-DEBUG = True
+DEBUG = False
 # 开发模式下的路径些微有些不同，主要是这个项目结构需要做这个判断
 
 PROJECT_ROOT_PATH = Path(__file__).parent.parent  # ATOClient/app 是项目根目录

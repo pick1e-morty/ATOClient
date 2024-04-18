@@ -1,6 +1,5 @@
-import os
-import sys
 import multiprocessing
+import sys
 from pathlib import Path
 
 from loguru import logger
@@ -22,8 +21,6 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     forms = MainWindow()
     forms.show()
-    forms.stackWidget.setCurrentIndex(1)
-
     # __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
     # testFile = os.path.join(__desktopPath, "0314.xlsx")
     # __filePath2 = os.path.join(__desktopPath, "0313.xlsx")
@@ -42,4 +39,8 @@ if __name__ == '__main__':
 
 # C:\Users\Administrator\Documents\CodeProject\ATO\app\AppData\soft_icon.ico
 # pyinstaller --noconfirm --onedir --contents-directory . --console --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK"  "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
-# pyinstaller --noconfirm --onedir --contents-directory . --console --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK" -i "C:\Users\Administrator\Documents\CodeProject\ATO\app\AppData\soft_icon.ico" "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
+# 下面这个带图标
+# pyinstaller --noconfirm --onedir --contents-directory . --console --clean --runtime-hook "C:/Users/Administrator/Documents/CodeProject/ATO/hook.py" --add-data "C:/Users/Administrator/Documents/CodeProject/ATO/app/AppData;AppData/" --collect-binaries "UnifyNetSDK" -i "C:\Users\Administrator\Documents\CodeProject\ATO\app\resource\_soft_icon.ico" "C:/Users/Administrator/Documents/CodeProject/ATO/app/ATO.py"
+
+
+# ATO-v5.0.0_x64_Portable.7z
