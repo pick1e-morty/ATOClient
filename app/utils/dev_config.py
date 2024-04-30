@@ -1,10 +1,10 @@
+from ipaddress import ip_address
 from pathlib import Path
 import sys
 from PyQt5.QtWidgets import QWidget, QApplication
 from loguru import logger
 from typing import Union, Dict
 
-from qfluentwidgets import MessageBox, Dialog
 
 from app.esheet_process_widget.epw_define import YTCTFEnum, YTConfigDataStruct
 from openpyxl import load_workbook
@@ -26,20 +26,11 @@ def getValidDevType(devType: str) -> str:
 
 def isValidIPv4(ip: str) -> bool:
     # 判断字符串是否为合法ipv4
-    # 将字符串按照点号分割成四个部分
-    parts = ip.split(".")
-    if len(parts) != 4:
+    try:
+        ip_address(ip)
+        return True
+    except ValueError:
         return False
-    # 判断每个数字是否在0到255之间
-    for part in parts:
-        try:
-            num = int(part)
-            if num < 0 or num > 255:
-                return False
-        except ValueError:
-            return False
-    # 所有数字都符合条件，说明该字符串是合法的IPv4地址
-    return True
 
 
 class DevConfigFileNotFoundError(Exception):

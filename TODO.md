@@ -67,3 +67,4 @@ requests.get没有开多线程，不过有超时两秒
 # EPW的UI显示功能提升
 
 在单号角度和月台角度的 表格列头中显示单号数量。ui的接口写好了但是没生效，在这个文件中app/esheet_process_widget/UI/table_widget.py
+
