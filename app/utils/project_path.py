@@ -13,7 +13,9 @@ if DEBUG:
     DVW_DOWNLOAD_VIDEO_PATH = PROJECT_ROOT_PATH / "pic"  # dvw下载到的文件路径
 else:
     APPDATA_PATH = PROJECT_ROOT_PATH.parent / "AppData"
-    DVW_DOWNLOAD_VIDEO_PATH = PROJECT_ROOT_PATH.parent.parent / "pic"  # dvw下载到的文件路径
+    DVW_DOWNLOAD_VIDEO_PATH = (
+        PROJECT_ROOT_PATH.parent.parent / "pic"
+    )  # dvw下载到的文件路径
 DVW_DOWNLOAD_VIDEO_PATH.mkdir(exist_ok=True)  # 创建路径
 
 DVW_DOWNLOAD_FILE_SUFFIX = ".mp4"  # dvw下载的文件后缀名

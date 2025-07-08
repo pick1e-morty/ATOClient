@@ -21,21 +21,29 @@ class Ui_EPW_Widget(object):
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setObjectName("splitter")
         self.fileGB = QtWidgets.QGroupBox(self.splitter)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.fileGB.sizePolicy().hasHeightForWidth())
         self.fileGB.setSizePolicy(sizePolicy)
         self.fileGB.setStyleSheet("border:0px")
-        self.fileGB.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
+        self.fileGB.setAlignment(
+            QtCore.Qt.AlignLeading | QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter
+        )
         self.fileGB.setObjectName("fileGB")
         self.gridLayout = QtWidgets.QGridLayout(self.fileGB)
         self.gridLayout.setObjectName("gridLayout")
         self.CustomFormat_CW = CardWidget(self.fileGB)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.CustomFormat_CW.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.CustomFormat_CW.sizePolicy().hasHeightForWidth()
+        )
         self.CustomFormat_CW.setSizePolicy(sizePolicy)
         self.CustomFormat_CW.setObjectName("CustomFormat_CW")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.CustomFormat_CW)
@@ -74,7 +82,9 @@ class Ui_EPW_Widget(object):
         self.gridLayout_2.addWidget(self.shipCID_LE, 2, 1, 1, 2)
         self.gridLayout.addWidget(self.CustomFormat_CW, 2, 0, 1, 1)
         self.TitleLabel = TitleLabel(self.fileGB)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.TitleLabel.sizePolicy().hasHeightForWidth())
@@ -100,7 +110,9 @@ class Ui_EPW_Widget(object):
         self.getfile_PB.setObjectName("getfile_PB")
         self.gridLayout.addWidget(self.getfile_PB, 3, 0, 1, 1)
         self.shipGB = QtWidgets.QGroupBox(self.splitter)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(5)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.shipGB.sizePolicy().hasHeightForWidth())
@@ -110,10 +122,14 @@ class Ui_EPW_Widget(object):
         self.gridLayout_7 = QtWidgets.QGridLayout(self.shipGB)
         self.gridLayout_7.setObjectName("gridLayout_7")
         self.reverseSelectionShipID_PB = PushButton(self.shipGB)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.reverseSelectionShipID_PB.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.reverseSelectionShipID_PB.sizePolicy().hasHeightForWidth()
+        )
         self.reverseSelectionShipID_PB.setSizePolicy(sizePolicy)
         self.reverseSelectionShipID_PB.setObjectName("reverseSelectionShipID_PB")
         self.gridLayout_7.addWidget(self.reverseSelectionShipID_PB, 2, 1, 1, 1)
@@ -121,18 +137,26 @@ class Ui_EPW_Widget(object):
         self.TitleLabel_2.setObjectName("TitleLabel_2")
         self.gridLayout_7.addWidget(self.TitleLabel_2, 0, 0, 1, 1)
         self.selectAllShipID_PB = PushButton(self.shipGB)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.selectAllShipID_PB.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.selectAllShipID_PB.sizePolicy().hasHeightForWidth()
+        )
         self.selectAllShipID_PB.setSizePolicy(sizePolicy)
         self.selectAllShipID_PB.setObjectName("selectAllShipID_PB")
         self.gridLayout_7.addWidget(self.selectAllShipID_PB, 2, 0, 1, 1)
         self.deleteSelectionShipID_PB = PushButton(self.shipGB)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.deleteSelectionShipID_PB.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.deleteSelectionShipID_PB.sizePolicy().hasHeightForWidth()
+        )
         self.deleteSelectionShipID_PB.setSizePolicy(sizePolicy)
         self.deleteSelectionShipID_PB.setObjectName("deleteSelectionShipID_PB")
         self.gridLayout_7.addWidget(self.deleteSelectionShipID_PB, 2, 2, 1, 1)
@@ -173,7 +197,9 @@ class Ui_EPW_Widget(object):
         self.gridLayout_3.addWidget(self.excelData_TW, 0, 0, 1, 1)
         self.gridLayout_7.addWidget(self.CardWidget_3, 1, 0, 1, 3)
         self.ytGB = QtWidgets.QGroupBox(self.splitter)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(5)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.ytGB.sizePolicy().hasHeightForWidth())
@@ -231,10 +257,14 @@ class Ui_EPW_Widget(object):
         self.VerticalSeparator = VerticalSeparator(self.CardWidget_2)
         self.VerticalSeparator.setObjectName("VerticalSeparator")
         self.gridLayout_9.addWidget(self.VerticalSeparator, 0, 2, 1, 1)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
+        )
         self.gridLayout_9.addItem(spacerItem, 0, 4, 1, 1)
         self.BodyLabel_4 = BodyLabel(self.CardWidget_2)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.BodyLabel_4.sizePolicy().hasHeightForWidth())
@@ -335,5 +365,17 @@ class Ui_EPW_Widget(object):
         self.selectAllYT_PB.setText(_translate("EPW_Widget", "全选月台"))
         self.reverseSelectionYT_PB.setText(_translate("EPW_Widget", "反选月台"))
         self.deleteSelectionYT_PB.setText(_translate("EPW_Widget", "删除选中月台"))
+
+
 from app.esheet_process_widget.UI.table_widget import CustomTableWidget
-from qfluentwidgets import BodyLabel, CardWidget, LineEdit, ListWidget, PushButton, SplitPushButton, SwitchButton, TitleLabel, VerticalSeparator
+from qfluentwidgets import (
+    BodyLabel,
+    CardWidget,
+    LineEdit,
+    ListWidget,
+    PushButton,
+    SplitPushButton,
+    SwitchButton,
+    TitleLabel,
+    VerticalSeparator,
+)

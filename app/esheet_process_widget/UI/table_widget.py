@@ -11,10 +11,10 @@ class CustomTableWidget(TableWidget):
 
     @pyqtSlot(int, int)
     def rowCountChanged(self, oldCount, newCount):
-        print('rowCountChanged')
+        print("rowCountChanged")
         super().rowCountChanged(oldCount, newCount)
         self.rowCountChangedSignal.emit(newCount)
 
     def rowResized(self, row, oldHeight, newHeight):
-        print('rowResized')
+        print("rowResized")
         super().rowResized(row, oldHeight, newHeight)

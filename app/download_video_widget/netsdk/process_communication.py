@@ -17,13 +17,21 @@ class StatusReportThread(threading.Thread):
     当然，尽早统一，对项目结构更好
     """
 
-    def __init__(self, statusReportList, statusReportListCondition, downloadResultList, downloadResultListCondition):
+    def __init__(
+        self,
+        statusReportList,
+        statusReportListCondition,
+        downloadResultList,
+        downloadResultListCondition,
+    ):
         super().__init__()
         self.downloadResultList = downloadResultList  # 进程通信的list
         self.downloadResultListCondition = downloadResultListCondition
 
         self.statusReportList = statusReportList  # 线程同步的列表
-        self.statusReportListCondition = statusReportListCondition  # 线程同步的condition
+        self.statusReportListCondition = (
+            statusReportListCondition  # 线程同步的condition
+        )
 
         self.producerDone = False  # 线程可以结束了的标志
 
@@ -36,16 +44,23 @@ class StatusReportThread(threading.Thread):
         while True:
             with self.statusReportListCondition:  # 这个锁只是为了 检空 的等待
                 if not self.statusReportList:
-                    if self.producerDone is True:  # 状态列表是空的，且 状态生成结束标志 为真，就说明可以结束了
+                    if (
+                        self.producerDone is True
+                    ):  # 状态列表是空的，且 状态生成结束标志 为真，就说明可以结束了
                         logger.info("statusReportThread子线程正常关闭")
-                        logger.info(f"{self.getName()}的statusReportThread子线程正常关闭")
+                        logger.info(
+                            f"{self.getName()}的statusReportThread子线程正常关闭"
+                        )
                         break
                     self.statusReportListCondition.wait()  # 列表是空的，但状态生成结束标志为假，则线程阻塞等待，不消耗资源，没有sleep
 
             with self.downloadResultListCondition:  # 上面那个wait被解锁后，就说明已经有状态要发送了
                 with self.statusReportListCondition:  # 然后开始拿大锁，再拿小锁(小锁应该好拿，也要确保同步)
-                    self.downloadResultList.extend(self.statusReportList)  # statusReportList的结构[widgetEnum, deviceAddress, f_iNDEX, f_status]
+                    self.downloadResultList.extend(
+                        self.statusReportList
+                    )  # statusReportList的结构[widgetEnum, deviceAddress, f_iNDEX, f_status]
                     self.statusReportList.clear()
                     self.downloadResultListCondition.notify()
+
 
 # TODO StopDownloadHandleThread应该可以放到这里了

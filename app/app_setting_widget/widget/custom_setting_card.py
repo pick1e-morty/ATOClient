@@ -3,15 +3,31 @@ from typing import Union
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QLabel, QButtonGroup
-from qfluentwidgets import SettingCard, FluentIconBase, ComboBox, ExpandSettingCard, RadioButton, SpinBox, CompactSpinBox
+from qfluentwidgets import (
+    SettingCard,
+    FluentIconBase,
+    ComboBox,
+    ExpandSettingCard,
+    RadioButton,
+    SpinBox,
+    CompactSpinBox,
+)
 
 
 class CustomComboBoxSettingCard(SettingCard):
-    """ Setting card with a combo box """
+    """Setting card with a combo box"""
+
     # 所有的SettingCard都只负责发信号，具体到修改配置文件时全部统一到上层
     valueChanged = pyqtSignal(str)
 
-    def __init__(self, icon: Union[str, QIcon, FluentIconBase], title, content=None, texts=None, parent=None):
+    def __init__(
+        self,
+        icon: Union[str, QIcon, FluentIconBase],
+        title,
+        content=None,
+        texts=None,
+        parent=None,
+    ):
         """
         Parameters
         ----------
@@ -40,17 +56,24 @@ class CustomComboBoxSettingCard(SettingCard):
         self.comboBox.currentIndexChanged.connect(self._onCurrentIndexChanged)
 
     def _onCurrentIndexChanged(self, index: int):
-        """ emit valueChanged signal """
+        """emit valueChanged signal"""
         self.valueChanged.emit(self.comboBox.currentText())
 
 
 class CustomOptionsSettingCard(ExpandSettingCard):
     # TODO 这个暂时不能用哈，特别乱。记得用那个data，直接给上层发Qt.red这种数据，这样上层就不用做冗余判断了
-    """ setting card with a group of options """
+    """setting card with a group of options"""
 
     optionChanged = pyqtSignal(str)
 
-    def __init__(self, icon: Union[str, QIcon, FluentIconBase], title, content=None, texts=None, parent=None):
+    def __init__(
+        self,
+        icon: Union[str, QIcon, FluentIconBase],
+        title,
+        content=None,
+        texts=None,
+        parent=None,
+    ):
         """
         Parameters
         ----------
@@ -94,7 +117,7 @@ class CustomOptionsSettingCard(ExpandSettingCard):
         self.buttonGroup.buttonClicked.connect(self.__onButtonClicked)
 
     def __onButtonClicked(self, button: RadioButton):
-        """ button clicked slot """
+        """button clicked slot"""
         if button.text() == self.choiceLabel.text():
             return
 
@@ -104,10 +127,19 @@ class CustomOptionsSettingCard(ExpandSettingCard):
 
 
 class CustomSpinBoxSettingCard(SettingCard):
-    """ Setting card with a spin box """
+    """Setting card with a spin box"""
+
     valueChanged = pyqtSignal(int)
 
-    def __init__(self, icon: Union[str, QIcon, FluentIconBase], title, content=None, minNum=0, maxNum=100, parent=None):
+    def __init__(
+        self,
+        icon: Union[str, QIcon, FluentIconBase],
+        title,
+        content=None,
+        minNum=0,
+        maxNum=100,
+        parent=None,
+    ):
         super().__init__(icon, title, content, parent)
         self.spinBox = SpinBox(self)
         self.spinBox.setAccelerated(True)
@@ -117,15 +149,24 @@ class CustomSpinBoxSettingCard(SettingCard):
         self.spinBox.valueChanged.connect(self._onValueChanged)
 
     def _onValueChanged(self, value: int):
-        """ emit valueChanged signal """
+        """emit valueChanged signal"""
         self.valueChanged.emit(value)
 
 
 class CustomCompactSpinBoxSettingCard(SettingCard):
-    """ Setting card with a spin box """
+    """Setting card with a spin box"""
+
     valueChanged = pyqtSignal(int)
 
-    def __init__(self, icon: Union[str, QIcon, FluentIconBase], title, content=None, minNum=0, maxNum=100, parent=None):
+    def __init__(
+        self,
+        icon: Union[str, QIcon, FluentIconBase],
+        title,
+        content=None,
+        minNum=0,
+        maxNum=100,
+        parent=None,
+    ):
         super().__init__(icon, title, content, parent)
         self.compactSpinBox = CompactSpinBox(self)
         self.compactSpinBox.setAccelerated(True)
@@ -135,5 +176,5 @@ class CustomCompactSpinBoxSettingCard(SettingCard):
         self.compactSpinBox.valueChanged.connect(self._onValueChanged)
 
     def _onValueChanged(self, value: int):
-        """ emit valueChanged signal """
+        """emit valueChanged signal"""
         self.valueChanged.emit(value)

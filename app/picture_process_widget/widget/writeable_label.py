@@ -48,7 +48,9 @@ class WriteableLabel(QLabel):
         y = self.startPoint.y() * heightScaleFactor
 
         painter = QPainter(pixmap)
-        painter.setPen(QPen(self.color, self.penWidth + widthScaleFactor))  # 设置画笔颜色和宽度,由于label被缩放了widthScaleFactor倍，所以线宽要给加回去，不然两个差别太大。
+        painter.setPen(
+            QPen(self.color, self.penWidth + widthScaleFactor)
+        )  # 设置画笔颜色和宽度,由于label被缩放了widthScaleFactor倍，所以线宽要给加回去，不然两个差别太大。
         if self.shape == "矩形":
             painter.drawRect(QRectF(x, y, w, h))
         elif self.shape == "圆形":
@@ -76,7 +78,9 @@ class WriteableLabel(QLabel):
                 painter.drawRect(QRect(self.startPoint, self.endPoint))
             elif self.shape == "圆形":
                 painter.drawEllipse(QRect(self.startPoint, self.endPoint))
-        elif self.startPoint is not None and self.endPoint is not None:  # 拖动结束后还要继续画
+        elif (
+            self.startPoint is not None and self.endPoint is not None
+        ):  # 拖动结束后还要继续画
             pen = QPen(self.color, self.penWidth)
             painter.setPen(pen)
             if self.shape == "矩形":

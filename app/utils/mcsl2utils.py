@@ -19,6 +19,7 @@ from types import TracebackType
 from typing import Type
 
 from PyQt5.QtCore import QRect, Qt, QSize
+
 # import aria2p
 # import psutil
 # from MCSL2Lib.ProgramControllers.logController import _MCSL2Logger
@@ -57,7 +58,9 @@ class ExceptionFilterMode(enum.Enum):
     SILENT = enum.auto()  # 过滤：不弹框提示，也不抛出异常，就当做什么都没发生
 
 
-def exceptionFilter(ty: Type[BaseException], value: BaseException, _traceback: TracebackType) -> ExceptionFilterMode:
+def exceptionFilter(
+    ty: Type[BaseException], value: BaseException, _traceback: TracebackType
+) -> ExceptionFilterMode:
     """
     过滤异常
     """
@@ -71,7 +74,11 @@ def exceptionFilter(ty: Type[BaseException], value: BaseException, _traceback: T
         return ExceptionFilterMode.PASS
     if isinstance(value, Exception) and "print test" in str(value):
         return ExceptionFilterMode.RAISE_AND_PRINT
-    if isinstance(value, Exception) and "RunningServerHeaderCardWidget cannot be converted to PyQt5.QtWidgets.QLayoutItem" in str(value):
+    if isinstance(
+        value, Exception
+    ) and "RunningServerHeaderCardWidget cannot be converted to PyQt5.QtWidgets.QLayoutItem" in str(
+        value
+    ):
         return ExceptionFilterMode.SILENT
     if isinstance(value, Exception) and "sipBadCatcherResult" in str(value):
         return ExceptionFilterMode.SILENT

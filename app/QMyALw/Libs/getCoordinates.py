@@ -11,9 +11,9 @@ PROJECT_NAME = "exp"
 getCoordinatesFileAddress = os.path.dirname(os.path.realpath(__file__))  # 本文件路径
 ATOFolderAddress = "../../../"  # 我的MainWindow所在 也是项目地址
 ROOT = os.path.join(getCoordinatesFileAddress, ATOFolderAddress)
-print(1,ROOT)
+print(1, ROOT)
 ROOT = os.path.realpath(ROOT)
-print(2,ROOT)
+print(2, ROOT)
 
 
 # FILE = Path(__file__).resolve()
@@ -24,17 +24,14 @@ print(2,ROOT)
 # print(1,ROOT)
 
 
-
-
-
 # 函数这边是确保训练结果要在相应的文件夹里 数据集那边重新跑 然后标注那边需要找到他的标记方法 是相对于图片大小的浮点坐标
 # 比例 标注对象相比图片所占的比例 中心点2 宽高
 # 预览图片不会自动关闭
 def getPackageCoordinates(confidence, IOU, NMS, saveResult, viewResult, path_list):
     # 获取包裹坐标 参数依次分别为 置信度，交并化，非极大值抑制，保存预测结果，结果预览，文件列表
 
-    modelPath = os.path.join(ROOT, 'custom/exp3.pt')
-    yaml = os.path.join(ROOT, 'custom/coco128.yaml')
+    modelPath = os.path.join(ROOT, "custom/exp3.pt")
+    yaml = os.path.join(ROOT, "custom/coco128.yaml")
 
     afterRemoveExistingExpPaths = clearFolder(path_list)
     for folderPath in afterRemoveExistingExpPaths:
@@ -42,7 +39,10 @@ def getPackageCoordinates(confidence, IOU, NMS, saveResult, viewResult, path_lis
             weights=modelPath,  # model.pt path(s)
             source=folderPath,  # 文件地址
             data=yaml,  # dataset.yaml path
-            imgsz=(640, 640),  # 送进网络中图片的resize大小 不会改变inputFile和outFile的尺寸 我有想法要重新训练720大小的模型
+            imgsz=(
+                640,
+                640,
+            ),  # 送进网络中图片的resize大小 不会改变inputFile和outFile的尺寸 我有想法要重新训练720大小的模型
             conf_thres=confidence,  # 置信度
             iou_thres=IOU,  # 交并化
             max_det=1000,  # maximum detections per image

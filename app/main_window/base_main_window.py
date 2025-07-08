@@ -3,9 +3,21 @@ import sys
 
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QFrame, QStackedWidget, QHBoxLayout, QLabel, QWidget
-from qfluentwidgets import (NavigationInterface, NavigationItemPosition, MessageBox,
-                            NavigationAvatarWidget, SplashScreen)
+from PyQt5.QtWidgets import (
+    QApplication,
+    QFrame,
+    QStackedWidget,
+    QHBoxLayout,
+    QLabel,
+    QWidget,
+)
+from qfluentwidgets import (
+    NavigationInterface,
+    NavigationItemPosition,
+    MessageBox,
+    NavigationAvatarWidget,
+    SplashScreen,
+)
 from qframelesswindow import FramelessWindow, StandardTitleBar
 
 import app.resource.resource  # type: ignore
@@ -20,11 +32,13 @@ class Widget(QFrame):
         self.label.setAlignment(Qt.AlignCenter)
         self.hBoxLayout = QHBoxLayout(self)
         self.hBoxLayout.addWidget(self.label, 1, Qt.AlignCenter)
-        self.setObjectName(text.replace(' ', '-'))
+        self.setObjectName(text.replace(" ", "-"))
 
 
 class BaseMainWindow(FramelessWindow):
-    switchToWidget = pyqtSignal(QWidget)  # 用于发送navigationInterface所点击的组件，没用stackWidget.currentChanged，就是为了点一次发一次，槽函数那边要实现刷新之类的操作
+    switchToWidget = pyqtSignal(
+        QWidget
+    )  # 用于发送navigationInterface所点击的组件，没用stackWidget.currentChanged，就是为了点一次发一次，槽函数那边要实现刷新之类的操作
 
     def __init__(self):
         super().__init__()
@@ -63,8 +77,8 @@ class BaseMainWindow(FramelessWindow):
 
         # add custom widget to bottom
         self.navigationInterface.addWidget(
-            routeKey='avatar',
-            widget=NavigationAvatarWidget('OffLine', ":/mainwindow/Robot_black.png"),
+            routeKey="avatar",
+            widget=NavigationAvatarWidget("OffLine", ":/mainwindow/Robot_black.png"),
             onClick=self.showMessageBox,
             position=NavigationItemPosition.BOTTOM,
         )
@@ -96,8 +110,15 @@ class BaseMainWindow(FramelessWindow):
 
         self.setQss()
 
-    def addSubInterface(self, interface, icon, text: str, position=NavigationItemPosition.TOP, parent=None):
-        """ add sub interface """
+    def addSubInterface(
+        self,
+        interface,
+        icon,
+        text: str,
+        position=NavigationItemPosition.TOP,
+        parent=None,
+    ):
+        """add sub interface"""
         self.stackWidget.addWidget(interface)
         self.navigationInterface.addItem(
             routeKey=interface.objectName(),
@@ -106,13 +127,15 @@ class BaseMainWindow(FramelessWindow):
             onClick=lambda: self.switchTo(interface),
             position=position,
             tooltip=text,
-            parentRouteKey=parent.objectName() if parent else None
+            parentRouteKey=parent.objectName() if parent else None,
         )
 
     def setQss(self):
-        color = 'light'
+        color = "light"
         hlPath = PROJECT_ROOT_PATH / "main_window"
-        with open(f'{str(hlPath)}/resource/{color}/main_window.qss', encoding='utf-8') as f:
+        with open(
+            f"{str(hlPath)}/resource/{color}/main_window.qss", encoding="utf-8"
+        ) as f:
             self.setStyleSheet(f.read())
 
     def switchTo(self, widget):
@@ -136,13 +159,14 @@ class BaseMainWindow(FramelessWindow):
         QApplication.processEvents()
 
     def showMessageBox(self):
-        w = MessageBox('developing', '', self)
+        w = MessageBox("developing", "", self)
         w.exec()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     QApplication.setHighDpiScaleFactorRoundingPolicy(
-        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 

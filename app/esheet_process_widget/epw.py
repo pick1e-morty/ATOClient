@@ -5,30 +5,54 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
 from PyQt5.QtCore import Qt, pyqtSlot, QEvent, QItemSelectionModel, pyqtSignal
-from PyQt5.QtWidgets import QApplication, QFileDialog, QTableWidgetItem, QListWidgetItem, QAbstractItemView
+from PyQt5.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QTableWidgetItem,
+    QListWidgetItem,
+    QAbstractItemView,
+)
 from loguru import logger
 from openpyxl.utils.exceptions import InvalidFileException
 from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
 
 from app.esheet_process_widget.base_epw import BaseEPW
-from app.esheet_process_widget.epw_define import SYTTWEnum, EDTWEnum, ExcelFileListWidgetItemDataStruct, SameYTCountTableWidgetItemDataStruct, ExcelDataTableWidgetItemDataStruct
-from app.esheet_process_widget.utils.tabale_data_utils import getExcelDataTableWidgetData, FileContentIsEmptyException, getSameYTCountTableWidgetData
+from app.esheet_process_widget.epw_define import (
+    SYTTWEnum,
+    EDTWEnum,
+    ExcelFileListWidgetItemDataStruct,
+    SameYTCountTableWidgetItemDataStruct,
+    ExcelDataTableWidgetItemDataStruct,
+)
+from app.esheet_process_widget.utils.tabale_data_utils import (
+    getExcelDataTableWidgetData,
+    FileContentIsEmptyException,
+    getSameYTCountTableWidgetData,
+)
 
 
 # mainwindow那边定义logger，子组件这边共用的，不过是没有独立的作用域标记了，但文件地址也能说明问题了
 
 
 class EPWclass(BaseEPW):
-    showErrorMsgBox = pyqtSignal(str, str)  # 多线程函数里有个需要弹窗的步骤，需要用个信号显示
+    showErrorMsgBox = pyqtSignal(
+        str, str
+    )  # 多线程函数里有个需要弹窗的步骤，需要用个信号显示
 
     def __init__(self, parent=None):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.setAcceptDrops(True)  # 开启拖拽
         self.init_ui()
-        self.ui.excelData_TW.rowCountChangedSignal.connect(self.on_excelData_TW_rowCountChanged)
-        self.ui.sameYTCount_TW.rowCountChangedSignal.connect(self.on_sameYTCount_TW_rowCountChanged)
+        self.ui.excelData_TW.rowCountChangedSignal.connect(
+            self.on_excelData_TW_rowCountChanged
+        )
+        self.ui.sameYTCount_TW.rowCountChangedSignal.connect(
+            self.on_sameYTCount_TW_rowCountChanged
+        )
 
-        self.showErrorMsgBox.connect(self.showMessageBox)  # 多线程函数里有个需要弹窗的步骤，需要用个信号来调槽函数显示
+        self.showErrorMsgBox.connect(
+            self.showMessageBox
+        )  # 多线程函数里有个需要弹窗的步骤，需要用个信号来调槽函数显示
 
     def init_ui(self):
         self.connect_keepShipNum_SPB_Action()
@@ -65,13 +89,17 @@ class EPWclass(BaseEPW):
             self.clearEPW_WidgetText()
 
     @pyqtSlot()
-    def loadExcelFile_LW_ItemData(self, excelFile_LW_ItemData: ExcelFileListWidgetItemDataStruct):
+    def loadExcelFile_LW_ItemData(
+        self, excelFile_LW_ItemData: ExcelFileListWidgetItemDataStruct
+    ):
         # 从excelFile_LW_ItemData中获取数据，加载到窗体中
         self.loadExcelData_TW(excelFile_LW_ItemData.edtw_ItemDataList)
         self.loadsameYTCount_TW(excelFile_LW_ItemData.sytctw_ItemDataList)
 
     @pyqtSlot()
-    def loadExcelData_TW(self, edtw_ItemDataList: List[ExcelDataTableWidgetItemDataStruct]):
+    def loadExcelData_TW(
+        self, edtw_ItemDataList: List[ExcelDataTableWidgetItemDataStruct]
+    ):
         # 加载excel数据表格组件数据
         self.ui.excelData_TW.setRowCount(len(edtw_ItemDataList))
 
@@ -94,7 +122,9 @@ class EPWclass(BaseEPW):
         self.ui.excelData_TW.updateSelectedRows()  # 刷新主题显示状态
 
     @pyqtSlot()
-    def loadsameYTCount_TW(self, sytctw_ItemDataList: List[SameYTCountTableWidgetItemDataStruct]):
+    def loadsameYTCount_TW(
+        self, sytctw_ItemDataList: List[SameYTCountTableWidgetItemDataStruct]
+    ):
         # 加载相同月台数量窗体数据
         self.ui.sameYTCount_TW.setRowCount(len(sytctw_ItemDataList))
         for index in range(len(sytctw_ItemDataList)):
@@ -121,7 +151,9 @@ class EPWclass(BaseEPW):
         in_sytctw_ItemDataList = self.getDataInSameYTCount_TW()
         excelFile_LW_ItemData = listItem.data(Qt.UserRole)
         excelFile_LW_ItemData.edtw_ItemDataList = in_edtw_ItemDataList
-        excelFile_LW_ItemData.sytctw_ItemDataList = in_sytctw_ItemDataList  # excelFile_LW_ItemData.excelFilePath不参与存取
+        excelFile_LW_ItemData.sytctw_ItemDataList = (
+            in_sytctw_ItemDataList  # excelFile_LW_ItemData.excelFilePath不参与存取
+        )
         listItem.setData(Qt.UserRole, excelFile_LW_ItemData)
 
     def getDataInExcelData_TW(self) -> List[ExcelDataTableWidgetItemDataStruct]:
@@ -130,9 +162,15 @@ class EPWclass(BaseEPW):
         in_edtw_ItemDataList = []
         for index in range(rowCount):
             temp_edtw_ItemData = ExcelDataTableWidgetItemDataStruct()
-            temp_edtw_ItemData.shipID = self.ui.excelData_TW.item(index, EDTWEnum.ShipID.value).text()
-            temp_edtw_ItemData.ytName = self.ui.excelData_TW.item(index, EDTWEnum.YT.value).text()
-            temp_edtw_ItemData.scanTime = self.ui.excelData_TW.item(index, EDTWEnum.ScanTime.value).text()
+            temp_edtw_ItemData.shipID = self.ui.excelData_TW.item(
+                index, EDTWEnum.ShipID.value
+            ).text()
+            temp_edtw_ItemData.ytName = self.ui.excelData_TW.item(
+                index, EDTWEnum.YT.value
+            ).text()
+            temp_edtw_ItemData.scanTime = self.ui.excelData_TW.item(
+                index, EDTWEnum.ScanTime.value
+            ).text()
             in_edtw_ItemDataList.append(temp_edtw_ItemData)
         return in_edtw_ItemDataList
 
@@ -142,9 +180,15 @@ class EPWclass(BaseEPW):
         in_syttlw_ItemDataList = []
         for index in range(rowCount):
             temp_syttlw_ItemData = SameYTCountTableWidgetItemDataStruct()
-            temp_syttlw_ItemData.ytName = self.ui.sameYTCount_TW.item(index, SYTTWEnum.YT.value).text()
-            temp_syttlw_ItemData.shipCount = self.ui.sameYTCount_TW.item(index, SYTTWEnum.Count.value).text()
-            temp_syttlw_ItemData.devChannel = self.ui.sameYTCount_TW.item(index, SYTTWEnum.Channel.value).text()
+            temp_syttlw_ItemData.ytName = self.ui.sameYTCount_TW.item(
+                index, SYTTWEnum.YT.value
+            ).text()
+            temp_syttlw_ItemData.shipCount = self.ui.sameYTCount_TW.item(
+                index, SYTTWEnum.Count.value
+            ).text()
+            temp_syttlw_ItemData.devChannel = self.ui.sameYTCount_TW.item(
+                index, SYTTWEnum.Channel.value
+            ).text()
             in_syttlw_ItemDataList.append(temp_syttlw_ItemData)
         return in_syttlw_ItemDataList
 
@@ -162,7 +206,9 @@ class EPWclass(BaseEPW):
         curPath = os.path.join(os.path.expanduser("~"), "Desktop")
         dlgTitle = "请选择要处理的Excel"
         filt = "文档(*.xlsx *.xls);;所有(*.*)"
-        filePathList, filtUsed = QFileDialog.getOpenFileNames(self, dlgTitle, curPath, filt)
+        filePathList, filtUsed = QFileDialog.getOpenFileNames(
+            self, dlgTitle, curPath, filt
+        )
         if filePathList:
             self.addFilePathsToexcelFile_LWData(filePathList)
 
@@ -177,7 +223,9 @@ class EPWclass(BaseEPW):
         excelFile_LW_RowCount = self.ui.excelFile_LW.count()
         for filePath in filePathList:
             fileName = os.path.basename(filePath)  # 获取文件名
-            existexcelFile_LWItem = self.ui.excelFile_LW.findItems(fileName, Qt.MatchExactly)  # 查找预添加的文件名称是否已经存在
+            existexcelFile_LWItem = self.ui.excelFile_LW.findItems(
+                fileName, Qt.MatchExactly
+            )  # 查找预添加的文件名称是否已经存在
             if existexcelFile_LWItem:
                 repeatFileNameList.append(fileName)
             else:
@@ -191,24 +239,42 @@ class EPWclass(BaseEPW):
             # inaItemDatafileAddress = self.getInexcelFile_LWaddedAppointFileAdress(fileName)  # 找到这个同名文件地址
             # loggerWaringText = "文件名重复,如要替换请先删除列表中的同名数据\n已存在于列表中的同名文件绝对地址为：\n" + str(inaItemDatafileAddress) + "\n当前重复文件名称的绝对文件地址为：\n" + str(filePath)
             loggerWaringText = f"{fileName}文件名重复，请在修改文件名称后重新尝试添加"
-            InfoBar.warning(title='警告', content=loggerWaringText, orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP_LEFT, duration=10000, parent=self)
+            InfoBar.warning(
+                title="警告",
+                content=loggerWaringText,
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_LEFT,
+                duration=10000,
+                parent=self,
+            )
             logger.warning(loggerWaringText)
 
         # 全部添加完毕后，判断是否新增项目。如果比处理文件之前的总数要多，就选中excelFile_LW最后一个项目
         if self.ui.excelFile_LW.count() > excelFile_LW_RowCount:
             self.ui.excelFile_LW.setCurrentRow(self.ui.excelFile_LW.count() - 1)
-            InfoBar.success(title='成功', content="处理完成", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+            InfoBar.success(
+                title="成功",
+                content="处理完成",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_LEFT,
+                duration=1000,
+                parent=self,
+            )
 
-    def thredPoolProcessingFiles(self, allowFilePathList):  # TODO 不知道哪里出的问题，这个线程貌似还不如不用的快
+    def thredPoolProcessingFiles(
+        self, allowFilePathList
+    ):  # TODO 不知道哪里出的问题，这个线程貌似还不如不用的快
         def subFun(filePath):
             inThreadExcelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)
             inThreadFileName = os.path.basename(filePath)  # 获取文件名
             return inThreadFileName, inThreadExcelFile_LW_ItemData
 
         with ThreadPoolExecutor() as executor:  # 3.8的max_workers 的默认值已改为 min(32, os.cpu_count() + 4)
-            futures = {executor.submit(subFun, filePath) for filePath in allowFilePathList}
+            futures = {
+                executor.submit(subFun, filePath) for filePath in allowFilePathList
+            }
             for future in as_completed(futures):
                 try:
                     result = future.result()
@@ -222,7 +288,9 @@ class EPWclass(BaseEPW):
                 except Exception as e:
                     logger.error(f"An error occurred while processing a file: {e}")
 
-    def handleExcelFileData2ItemData(self, filePath: str) -> ExcelFileListWidgetItemDataStruct:
+    def handleExcelFileData2ItemData(
+        self, filePath: str
+    ) -> ExcelFileListWidgetItemDataStruct:
         # 获取excel文件的指定行列数据，并返回excelFile_LW_ItemDataStruct
         logger.info("本次处理的Excel文件地址为:" + filePath)
         if self.ui.customFormat_SB.isChecked():
@@ -233,10 +301,18 @@ class EPWclass(BaseEPW):
         else:
             shipid_CID = scanTime_CID = yt_CID = scanTimeFormat_CID = None
         try:
-            edtw_ItemDataList = getExcelDataTableWidgetData(filePath, shipid_CID, scanTime_CID, yt_CID, scanTimeFormat_CID)  # 用户没选自定义列号就用函数中缺省的列号
-            sytctw_ItemDataList = getSameYTCountTableWidgetData(self.devConfigGenerate, edtw_ItemDataList)  # 从上一步函数的返回值中获取相同月台表格组件中的数据
-        except FileContentIsEmptyException:  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
-            loggerErrorText = f"文件是空的，注意检查是否填错数据列号或选错文件\n{filePath}"
+            edtw_ItemDataList = getExcelDataTableWidgetData(
+                filePath, shipid_CID, scanTime_CID, yt_CID, scanTimeFormat_CID
+            )  # 用户没选自定义列号就用函数中缺省的列号
+            sytctw_ItemDataList = getSameYTCountTableWidgetData(
+                self.devConfigGenerate, edtw_ItemDataList
+            )  # 从上一步函数的返回值中获取相同月台表格组件中的数据
+        except (
+            FileContentIsEmptyException
+        ):  # 要处理的excel文件是空的,应该是选错文件了，或者输错了列号了
+            loggerErrorText = (
+                f"文件是空的，注意检查是否填错数据列号或选错文件\n{filePath}"
+            )
             # MessageBox('错误', loggerErrorText, self).exec_()
             self.showErrorMsgBox.emit("错误", loggerErrorText)
             logger.warning(loggerErrorText)
@@ -258,8 +334,12 @@ class EPWclass(BaseEPW):
             return excelFile_LW_ItemData
 
     @pyqtSlot(str, str)
-    def showMessageBox(self, title, text):  # 多线程函数里有个需要弹窗的步骤，需要用个槽函数来显示
-        MessageBox(title, text, self).show()  # 主题作者不知道设置了什么，就算不用exec_也可以屏蔽用户对界面的操作，而不用阻塞事件循环，很棒!
+    def showMessageBox(
+        self, title, text
+    ):  # 多线程函数里有个需要弹窗的步骤，需要用个槽函数来显示
+        MessageBox(
+            title, text, self
+        ).show()  # 主题作者不知道设置了什么，就算不用exec_也可以屏蔽用户对界面的操作，而不用阻塞事件循环，很棒!
 
     def getInexcelFile_LWaddedAppointFileAdress(self, fileName: str) -> str:  # 没用上
         # 获取在excelFile_LW组件中已经添加过的指定的文件地址
@@ -275,19 +355,46 @@ class EPWclass(BaseEPW):
         if selectedItems:
             selectedItem = selectedItems[0]
             selectedItemText = selectedItem.text()
-            filePath = selectedItem.data(Qt.UserRole).excelFilePath  # 拿到这个项目保存的文件地址
-            excelFile_LW_ItemData = self.handleExcelFileData2ItemData(filePath)  # 通过内部方法直接得到ExcelFileListWidgetItemDataStruct
-            if excelFile_LW_ItemData:  # 这里的写法跳过了文件名重复判断和ListWidgetItem.setData()
+            filePath = selectedItem.data(
+                Qt.UserRole
+            ).excelFilePath  # 拿到这个项目保存的文件地址
+            excelFile_LW_ItemData = self.handleExcelFileData2ItemData(
+                filePath
+            )  # 通过内部方法直接得到ExcelFileListWidgetItemDataStruct
+            if (
+                excelFile_LW_ItemData
+            ):  # 这里的写法跳过了文件名重复判断和ListWidgetItem.setData()
                 self.clearEPW_WidgetText()  # 因为切项目的时候会自动保存
                 self.loadExcelFile_LW_ItemData(excelFile_LW_ItemData)
-                InfoBar.success(title='成功', content=f"已重新加载{selectedItemText}", orient=Qt.Horizontal, isClosable=True,
-                                position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+                InfoBar.success(
+                    title="成功",
+                    content=f"已重新加载{selectedItemText}",
+                    orient=Qt.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP_LEFT,
+                    duration=1000,
+                    parent=self,
+                )
             else:
-                InfoBar.error(title='错误', content=f"重新加载{selectedItemText}失败", orient=Qt.Horizontal, isClosable=True,
-                              position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+                InfoBar.error(
+                    title="错误",
+                    content=f"重新加载{selectedItemText}失败",
+                    orient=Qt.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP_LEFT,
+                    duration=1000,
+                    parent=self,
+                )
         else:
-            InfoBar.warning(title='警告', content="未选中任何项目", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+            InfoBar.warning(
+                title="警告",
+                content="未选中任何项目",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_LEFT,
+                duration=1000,
+                parent=self,
+            )
 
     @pyqtSlot()
     def on_deleteExcelFileLWItem_PB_clicked(self):
@@ -298,12 +405,26 @@ class EPWclass(BaseEPW):
             selectedItemText = selectedItem.text()
             selectedItemRow = self.ui.excelFile_LW.row(selectedItems[0])
             self.ui.excelFile_LW.takeItem(selectedItemRow)
-            InfoBar.success(title='成功', content=f"已删除{selectedItemText}", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+            InfoBar.success(
+                title="成功",
+                content=f"已删除{selectedItemText}",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_LEFT,
+                duration=1000,
+                parent=self,
+            )
             self.ui.excelFile_LW.setCurrentRow(self.ui.excelFile_LW.count() - 1)
         else:
-            InfoBar.warning(title='警告', content="未选中任何项目", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP_LEFT, duration=1000, parent=self)
+            InfoBar.warning(
+                title="警告",
+                content="未选中任何项目",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP_LEFT,
+                duration=1000,
+                parent=self,
+            )
 
     @pyqtSlot(QEvent)
     def dragEnterEvent(self, event):
@@ -346,41 +467,69 @@ class EPWclass(BaseEPW):
 
     def keepAppointNumShipIDInYt(self, keepNum: int):
         # 在选中月台中仅保留指定数量的单号
-        selectedRows = self.ui.sameYTCount_TW.selectionModel().selectedRows(SYTTWEnum.YT.value)
+        selectedRows = self.ui.sameYTCount_TW.selectionModel().selectedRows(
+            SYTTWEnum.YT.value
+        )
         if not selectedRows:
-            InfoBar.warning(title='警告', content="未选中任何月台", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
+            InfoBar.warning(
+                title="警告",
+                content="未选中任何月台",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=1000,
+                parent=self.ui.sameYTCount_TW,
+            )
             return
         deleteShipIdNumDict = {}
         for modelIndex in selectedRows:
             row = modelIndex.row()  # 用QModelIndex更规矩一点
-            ytName = self.ui.sameYTCount_TW.item(row, SYTTWEnum.YT.value).text()  # 我晓得modelIndex指的我现在要取的item
-            shipCount = int(self.ui.sameYTCount_TW.item(row, SYTTWEnum.Count.value).text())
+            ytName = self.ui.sameYTCount_TW.item(
+                row, SYTTWEnum.YT.value
+            ).text()  # 我晓得modelIndex指的我现在要取的item
+            shipCount = int(
+                self.ui.sameYTCount_TW.item(row, SYTTWEnum.Count.value).text()
+            )
             if shipCount > keepNum:  # 同月台的单号总量大于想要保留的数量才需要删
                 deleteNum = shipCount - keepNum
                 deleteShipIdNumDict[ytName] = deleteNum
         # 上面取到了要删除的月台中的单号数量和月台名称
         ytNameDict = {}
-        for row in range(self.ui.excelData_TW.rowCount()):  # 全取行数后做切片和取中判行数，我选了前者
+        for row in range(
+            self.ui.excelData_TW.rowCount()
+        ):  # 全取行数后做切片和取中判行数，我选了前者
             ytName = self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
             ytNameDict[ytName] = ytNameDict.get(ytName, []) + [row]
 
         rows_to_delete = []  # 创建一个列表用来存储准备删除的行号
-        for ytName in deleteShipIdNumDict.keys():  # ytNameDict存的是所有的yt行数，我这里只需要拿deleteNum个行数进行删除
-            rows_to_delete.extend(ytNameDict[ytName][:deleteShipIdNumDict[ytName]])
+        for (
+            ytName
+        ) in (
+            deleteShipIdNumDict.keys()
+        ):  # ytNameDict存的是所有的yt行数，我这里只需要拿deleteNum个行数进行删除
+            rows_to_delete.extend(ytNameDict[ytName][: deleteShipIdNumDict[ytName]])
         rows_to_delete.sort(reverse=True)  # 倒序删除不会影响index
         for row in rows_to_delete:
             self.ui.excelData_TW.removeRow(row)
         self.afterDelete_RecalculateSameYTCountTableWidgetData()
-        InfoBar.success(title='成功', content=f"已保留指定数量月台中的单号数量", orient=Qt.Horizontal, isClosable=True,
-                        position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
+        InfoBar.success(
+            title="成功",
+            content=f"已保留指定数量月台中的单号数量",
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=1000,
+            parent=self.ui.sameYTCount_TW,
+        )
 
     def afterDelete_RecalculateSameYTCountTableWidgetData(self):
         # 由于整个EPW只有删除的操作，在删除操作完成之后重新计算相同月台表格的数据
         # 不用重新匹配设备配置，我只是改变了单号数量
 
-        ytNameList = [self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text() for row in
-                      range(self.ui.excelData_TW.rowCount())]
+        ytNameList = [
+            self.ui.excelData_TW.item(row, EDTWEnum.YT.value).text()
+            for row in range(self.ui.excelData_TW.rowCount())
+        ]
         sameYTCount = Counter(ytNameList)  # 字典子类用于统计可哈希对象数量
         # 更新sameYTCount_TW的单号总量列数据，
         for row in range(self.ui.sameYTCount_TW.rowCount() - 1, -1, -1):
@@ -399,15 +548,29 @@ class EPWclass(BaseEPW):
     def on_selectAllShipID_PB_clicked(self):
         # 全选单号被按下
         self.ui.excelData_TW.selectAll()
-        InfoBar.success(title='成功', content=f"已全选单号", orient=Qt.Horizontal, isClosable=True,
-                        position=InfoBarPosition.TOP, duration=1000, parent=self.ui.excelData_TW)
+        InfoBar.success(
+            title="成功",
+            content=f"已全选单号",
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=1000,
+            parent=self.ui.excelData_TW,
+        )
 
     @pyqtSlot()
     def on_selectAllYT_PB_clicked(self):
         # 全选月台被按下
         self.ui.sameYTCount_TW.selectAll()
-        InfoBar.success(title='成功', content=f"已全选月台", orient=Qt.Horizontal, isClosable=True,
-                        position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
+        InfoBar.success(
+            title="成功",
+            content=f"已全选月台",
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=1000,
+            parent=self.ui.sameYTCount_TW,
+        )
 
     @pyqtSlot()
     def on_reverseSelectionShipID_PB_clicked(self):
@@ -418,12 +581,23 @@ class EPWclass(BaseEPW):
             item = self.ui.excelData_TW.item(row, 0)
             modelIndex = self.ui.excelData_TW.indexFromItem(item)
             if item.isSelected():
-                selectionModel.select(modelIndex, QItemSelectionModel.Deselect | QItemSelectionModel.Rows)
+                selectionModel.select(
+                    modelIndex, QItemSelectionModel.Deselect | QItemSelectionModel.Rows
+                )
             else:
-                selectionModel.select(modelIndex, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+                selectionModel.select(
+                    modelIndex, QItemSelectionModel.Select | QItemSelectionModel.Rows
+                )
         self.ui.excelData_TW.updateSelectedRows()
-        InfoBar.success(title='成功', content=f"已反选单号", orient=Qt.Horizontal, isClosable=True,
-                        position=InfoBarPosition.TOP, duration=1000, parent=self.ui.excelData_TW)
+        InfoBar.success(
+            title="成功",
+            content=f"已反选单号",
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=1000,
+            parent=self.ui.excelData_TW,
+        )
 
     @pyqtSlot()
     def on_reverseSelectionYT_PB_clicked(self):
@@ -433,42 +607,87 @@ class EPWclass(BaseEPW):
             item = self.ui.sameYTCount_TW.item(row, 0)
             modelIndex = self.ui.sameYTCount_TW.indexFromItem(item)
             if item.isSelected():
-                selectionModel.select(modelIndex, QItemSelectionModel.Deselect | QItemSelectionModel.Rows)
+                selectionModel.select(
+                    modelIndex, QItemSelectionModel.Deselect | QItemSelectionModel.Rows
+                )
             else:
-                selectionModel.select(modelIndex, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+                selectionModel.select(
+                    modelIndex, QItemSelectionModel.Select | QItemSelectionModel.Rows
+                )
         self.ui.sameYTCount_TW.updateSelectedRows()
-        InfoBar.success(title='成功', content=f"已反选月台", orient=Qt.Horizontal, isClosable=True,
-                        position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
+        InfoBar.success(
+            title="成功",
+            content=f"已反选月台",
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=1000,
+            parent=self.ui.sameYTCount_TW,
+        )
 
     @pyqtSlot()
     def on_deleteSelectionShipID_PB_clicked(self):
         # 删除单号按钮被按下
-        selectItems = self.ui.excelData_TW.selectionModel().selectedRows(SYTTWEnum.YT.value)
+        selectItems = self.ui.excelData_TW.selectionModel().selectedRows(
+            SYTTWEnum.YT.value
+        )
         if selectItems:
             for modelIndex in reversed(selectItems):
-                self.ui.excelData_TW.removeRow(modelIndex.row())  # 倒序删除不会影响index
+                self.ui.excelData_TW.removeRow(
+                    modelIndex.row()
+                )  # 倒序删除不会影响index
             self.afterDelete_RecalculateSameYTCountTableWidgetData()
-            InfoBar.success(title='成功', content=f"已删除选中单号", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP, duration=1000, parent=self.ui.excelData_TW)
+            InfoBar.success(
+                title="成功",
+                content=f"已删除选中单号",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=1000,
+                parent=self.ui.excelData_TW,
+            )
         else:
-            InfoBar.warning(title='警告', content="未选中任何行", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP, duration=1000, parent=self.ui.excelData_TW)
+            InfoBar.warning(
+                title="警告",
+                content="未选中任何行",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=1000,
+                parent=self.ui.excelData_TW,
+            )
 
     @pyqtSlot()
     def on_deleteSelectionYT_PB_clicked(self):
         # 删除月台按钮被按下
-        selectItems = self.ui.sameYTCount_TW.selectionModel().selectedRows(SYTTWEnum.YT.value)
+        selectItems = self.ui.sameYTCount_TW.selectionModel().selectedRows(
+            SYTTWEnum.YT.value
+        )
         if not selectItems:
-            InfoBar.warning(title='警告', content="未选中任何月台", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
+            InfoBar.warning(
+                title="警告",
+                content="未选中任何月台",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=1000,
+                parent=self.ui.sameYTCount_TW,
+            )
             return
         ytNameList = []
         for modelIndex in selectItems:
             delete_YtName = self.ui.sameYTCount_TW.itemFromIndex(modelIndex).text()
             ytNameList.append(delete_YtName)
         self.deleteExcelData_TW_ItemByYTName(ytNameList)
-        InfoBar.success(title='成功', content=f"已删除选中月台", orient=Qt.Horizontal, isClosable=True,
-                        position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
+        InfoBar.success(
+            title="成功",
+            content=f"已删除选中月台",
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=1000,
+            parent=self.ui.sameYTCount_TW,
+        )
 
     def deleteExcelData_TW_ItemByYTName(self, ytNameList: List[str]):
         # 删除excelData_TW中指定月台的数据
@@ -491,13 +710,24 @@ class EPWclass(BaseEPW):
         # 删除未配置月台按钮被按下
         unConfiguredYtNameList = []
         for row in range(self.ui.sameYTCount_TW.rowCount()):
-            channelText = self.ui.sameYTCount_TW.item(row, SYTTWEnum.Channel.value).text()
+            channelText = self.ui.sameYTCount_TW.item(
+                row, SYTTWEnum.Channel.value
+            ).text()
             if channelText == "未配置":
-                unConfiguredYtNameList.append(self.ui.sameYTCount_TW.item(row, SYTTWEnum.YT.value).text())
+                unConfiguredYtNameList.append(
+                    self.ui.sameYTCount_TW.item(row, SYTTWEnum.YT.value).text()
+                )
         if unConfiguredYtNameList:
             self.deleteExcelData_TW_ItemByYTName(unConfiguredYtNameList)
-            InfoBar.success(title='成功', content=f"已删除未配置月台", orient=Qt.Horizontal, isClosable=True,
-                            position=InfoBarPosition.TOP, duration=1000, parent=self.ui.sameYTCount_TW)
+            InfoBar.success(
+                title="成功",
+                content=f"已删除未配置月台",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=1000,
+                parent=self.ui.sameYTCount_TW,
+            )
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
@@ -508,7 +738,10 @@ if __name__ == "__main__":  # 用于当前窗体测试
 
     from PyQt5.QtWidgets import QWidget
     from app.utils.forms_config import getFormsConfigDict
-    from app.utils.dev_config import YtBindDevConfigGenerate, DevConfigFileContentIsInvalidException
+    from app.utils.dev_config import (
+        YtBindDevConfigGenerate,
+        DevConfigFileContentIsInvalidException,
+    )
 
     parentForTest = QWidget()
     parentForTest.formsConfigDict = getFormsConfigDict()
@@ -520,13 +753,15 @@ if __name__ == "__main__":  # 用于当前窗体测试
         logger.error(e)
 
     forms = EPWclass(parentForTest)  # 创建窗体
-    __desktopPath = os.path.join(os.path.expanduser('~'), 'Desktop')
+    __desktopPath = os.path.join(os.path.expanduser("~"), "Desktop")
     __filePath1 = os.path.join(__desktopPath, "0313.xlsx")
     __filePath2 = os.path.join(__desktopPath, "0314.xlsx")
     # forms.addFilePathsToexcelFile_LWData([__filePath1])
     # forms.addFilePathsToexcelFile_LWData([__filePath2, __filePath1])
 
-    excelFile_LW_ItemData = forms.handleExcelFileData2ItemData(__filePath1)  # 通过内部方法直接得到ExcelFileListWidgetItemDataStruct
+    excelFile_LW_ItemData = forms.handleExcelFileData2ItemData(
+        __filePath1
+    )  # 通过内部方法直接得到ExcelFileListWidgetItemDataStruct
     forms.show()
 
     sys.exit(app.exec_())

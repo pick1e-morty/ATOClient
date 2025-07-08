@@ -1,8 +1,14 @@
 import sys
 
 from PyQt5.QtCore import pyqtSlot, QEvent, Qt, QPropertyAnimation, QRect, QEasingCurve
-from PyQt5.QtWidgets import (QApplication, QWidget, QListWidget, QAction, QSizePolicy)
-from qfluentwidgets import RoundMenu, Action, MenuAnimationType, FlowLayout, SwitchButton
+from PyQt5.QtWidgets import QApplication, QWidget, QListWidget, QAction, QSizePolicy
+from qfluentwidgets import (
+    RoundMenu,
+    Action,
+    MenuAnimationType,
+    FlowLayout,
+    SwitchButton,
+)
 
 from app.esheet_process_widget.UI.ui_ExcelProcess import Ui_EPW_Widget
 
@@ -21,7 +27,9 @@ class BaseEPW(QWidget):
         super().__init__(parent)  # 调用父类构造函数，创建窗体
         self.ui = Ui_EPW_Widget()  # 创建UI对象
         self.ui.setupUi(self)  # 构造UI界面
-        formsConfigDict = parent.formsConfigDict  # 窗体配置由父窗体传入，毕竟那边要读取文件还要做exception处理。
+        formsConfigDict = (
+            parent.formsConfigDict
+        )  # 窗体配置由父窗体传入，毕竟那边要读取文件还要做exception处理。
         self.epw_config = formsConfigDict["epw"]
         self.devConfigGenerate = parent.devConfigGenerate  # 设备配置生成器同理
         self.initUI()
@@ -42,7 +50,9 @@ class BaseEPW(QWidget):
         self.init_excelData_TW_Menu()
         self.init_sameYTCount_TW_Menu()
         # 下面是方法依赖的UI设定，不可更改
-        self.ui.excelFile_LW.setSelectionMode(QListWidget.SingleSelection)  # get_FilePathInExcelFile_LW_ItemData
+        self.ui.excelFile_LW.setSelectionMode(
+            QListWidget.SingleSelection
+        )  # get_FilePathInExcelFile_LW_ItemData
 
     @staticmethod
     def moveSwitchButtonIndicator2Right(switchButton: SwitchButton):
@@ -51,7 +61,9 @@ class BaseEPW(QWidget):
         switchButtonLabel = switchButton.label
         switchButtonIndicator = switchButton.indicator
         switchButton.hBox.removeWidget(switchButtonLabel)
-        switchButton.hBox.removeWidget(switchButtonIndicator)  # TODO 这里可以单独开个小测试文件，应该不用做两次removeWidget操作的
+        switchButton.hBox.removeWidget(
+            switchButtonIndicator
+        )  # TODO 这里可以单独开个小测试文件，应该不用做两次removeWidget操作的
         switchButton.hBox.addWidget(switchButtonLabel, 0, Qt.AlignRight)
         switchButton.hBox.addWidget(switchButtonIndicator, 0, Qt.AlignRight)
 
@@ -66,8 +78,12 @@ class BaseEPW(QWidget):
         self.flowLayout.setHorizontalSpacing(6)
 
         self.ui.selectAllShipID_PB.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-        self.ui.reverseSelectionShipID_PB.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-        self.ui.deleteSelectionShipID_PB.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        self.ui.reverseSelectionShipID_PB.setSizePolicy(
+            QSizePolicy.Maximum, QSizePolicy.Fixed
+        )
+        self.ui.deleteSelectionShipID_PB.setSizePolicy(
+            QSizePolicy.Maximum, QSizePolicy.Fixed
+        )
 
         self.ui.verticalLayout.removeWidget(self.ui.selectAllShipID_PB)
         self.ui.verticalLayout.removeWidget(self.ui.reverseSelectionShipID_PB)
@@ -87,7 +103,9 @@ class BaseEPW(QWidget):
         self.ui.scanTimeFormat_LE.setText(self.epw_config["自定义格式"]["扫描时间格式"])
 
         self.ui.shipCID_LE.setVisible(False)
-        self.ui.shipCID_BL.setVisible(False)  # TODO 从这段代码就能看出，这些个组件应该用groupBox包裹起来
+        self.ui.shipCID_BL.setVisible(
+            False
+        )  # TODO 从这段代码就能看出，这些个组件应该用groupBox包裹起来
         self.ui.ytCID_LE.setVisible(False)  # 只有groupBox负责显示隐藏，可以独立做个组件
         self.ui.ytCID_BL.setVisible(False)
         self.ui.scanTimeCID_LE.setVisible(False)
@@ -101,24 +119,47 @@ class BaseEPW(QWidget):
         # 展开组件，向上扩展至正常展开时所占用的高度
         # 或收缩至只有一个switchButton的大小
         # 按照相对应的状态来判断是否展示Custom_CardWidget中的组件
-        fourLineEditHeight = self.ui.shipCID_LE.height() + self.ui.ytCID_LE.height() + self.ui.scanTimeCID_LE.height() + self.ui.scanTimeFormat_LE.height()
+        fourLineEditHeight = (
+            self.ui.shipCID_LE.height()
+            + self.ui.ytCID_LE.height()
+            + self.ui.scanTimeCID_LE.height()
+            + self.ui.scanTimeFormat_LE.height()
+        )
         bodyLabelHeight = self.ui.scanTimeFormat_BL.height()
         verticalSpacingHeight = self.ui.CustomFormat_CW.layout().verticalSpacing() * 4
-        totalHeight = fourLineEditHeight + bodyLabelHeight + verticalSpacingHeight  # 先获取正常展开时所占用的高度
+        totalHeight = (
+            fourLineEditHeight + bodyLabelHeight + verticalSpacingHeight
+        )  # 先获取正常展开时所占用的高度
 
         if isChecked:  # 展开组件，向上扩展至正常展开时所占用的高度
-            self.expandCustom_CW_Animation = QPropertyAnimation(self.ui.CustomFormat_CW, b'geometry')
+            self.expandCustom_CW_Animation = QPropertyAnimation(
+                self.ui.CustomFormat_CW, b"geometry"
+            )
             start_geometry = self.ui.CustomFormat_CW.geometry()
-            end_geometry = QRect(start_geometry.x(), start_geometry.y() - totalHeight, start_geometry.width(), start_geometry.height() + totalHeight)
+            end_geometry = QRect(
+                start_geometry.x(),
+                start_geometry.y() - totalHeight,
+                start_geometry.width(),
+                start_geometry.height() + totalHeight,
+            )
             self.expandCustom_CW_Animation.setDuration(200)  # 设置动画持续时间为200毫秒
             self.expandCustom_CW_Animation.setStartValue(start_geometry)
             self.expandCustom_CW_Animation.setEndValue(end_geometry)
             self.expandCustom_CW_Animation.start()  # 启动展开动画
         else:  # 收缩组件，向下收缩
-            self.collapseCustom_CW_Animation = QPropertyAnimation(self.ui.CustomFormat_CW, b'geometry')
+            self.collapseCustom_CW_Animation = QPropertyAnimation(
+                self.ui.CustomFormat_CW, b"geometry"
+            )
             start_geometry = self.ui.CustomFormat_CW.geometry()
-            end_geometry = QRect(start_geometry.x(), start_geometry.y() + totalHeight, start_geometry.width(), start_geometry.height() - totalHeight)
-            self.collapseCustom_CW_Animation.setDuration(200)  # 设置动画持续时间为200毫秒
+            end_geometry = QRect(
+                start_geometry.x(),
+                start_geometry.y() + totalHeight,
+                start_geometry.width(),
+                start_geometry.height() - totalHeight,
+            )
+            self.collapseCustom_CW_Animation.setDuration(
+                200
+            )  # 设置动画持续时间为200毫秒
             self.collapseCustom_CW_Animation.setStartValue(start_geometry)
             self.collapseCustom_CW_Animation.setEndValue(end_geometry)
             self.collapseCustom_CW_Animation.start()  # 启动展开动画
@@ -136,9 +177,13 @@ class BaseEPW(QWidget):
         action_getfile = Action("添加文件")
         action_getfile.triggered.connect(lambda: self.ui.getfile_PB.click())
         action_reprocessExcelFile = Action("重新处理文件")
-        action_reprocessExcelFile.triggered.connect(lambda: self.ui.reprocessExcelFile_PB.click())
+        action_reprocessExcelFile.triggered.connect(
+            lambda: self.ui.reprocessExcelFile_PB.click()
+        )
         action_deleteExcelFileLWItem = Action("删除选中文件")
-        action_deleteExcelFileLWItem.triggered.connect(lambda: self.ui.deleteExcelFileLWItem_PB.click())
+        action_deleteExcelFileLWItem.triggered.connect(
+            lambda: self.ui.deleteExcelFileLWItem_PB.click()
+        )
 
         self.excelFile_LW_Menu = RoundMenu(parent=self)
         self.excelFile_LW_Menu.addAction(action_getfile)
@@ -148,11 +193,17 @@ class BaseEPW(QWidget):
     def init_excelData_TW_Menu(self):
         # 初始化excel数据表格组件的右键菜单
         action_selectAllShipID = Action("全选单号")
-        action_selectAllShipID.triggered.connect(lambda: self.ui.selectAllShipID_PB.click())
+        action_selectAllShipID.triggered.connect(
+            lambda: self.ui.selectAllShipID_PB.click()
+        )
         action_reverseSelectionShipID = Action("反选单号")
-        action_reverseSelectionShipID.triggered.connect(lambda: self.ui.reverseSelectionShipID_PB.click())
+        action_reverseSelectionShipID.triggered.connect(
+            lambda: self.ui.reverseSelectionShipID_PB.click()
+        )
         action_deleteSelectionShipID = Action("删除选中单号")
-        action_deleteSelectionShipID.triggered.connect(lambda: self.ui.deleteSelectionShipID_PB.click())
+        action_deleteSelectionShipID.triggered.connect(
+            lambda: self.ui.deleteSelectionShipID_PB.click()
+        )
 
         self.excelData_TW_Menu = RoundMenu(parent=self)
         self.excelData_TW_Menu.addAction(action_selectAllShipID)
@@ -162,13 +213,19 @@ class BaseEPW(QWidget):
     def init_sameYTCount_TW_Menu(self):
         # 初始化相同月台总量表格组件的右键菜单
         action_deleteUnConfiguredYT = Action("删除未配置月台")
-        action_deleteUnConfiguredYT.triggered.connect(lambda: self.ui.deleteUnConfiguredYT_PB.click())
+        action_deleteUnConfiguredYT.triggered.connect(
+            lambda: self.ui.deleteUnConfiguredYT_PB.click()
+        )
         action_selectAllYT = Action("全选月台")
         action_selectAllYT.triggered.connect(lambda: self.ui.selectAllYT_PB.click())
         action_reverseSelectionYT = Action("反选月台")
-        action_reverseSelectionYT.triggered.connect(lambda: self.ui.reverseSelectionYT_PB.click())
+        action_reverseSelectionYT.triggered.connect(
+            lambda: self.ui.reverseSelectionYT_PB.click()
+        )
         action_deleteSelectionYT = Action("删除选中月台")
-        action_deleteSelectionYT.triggered.connect(lambda: self.ui.deleteSelectionYT_PB.click())
+        action_deleteSelectionYT.triggered.connect(
+            lambda: self.ui.deleteSelectionYT_PB.click()
+        )
 
         self.sameYTCount_TW_Menu = RoundMenu(parent=self)
         self.sameYTCount_TW_Menu.addMenu(self.ui.keepShipNum_SPB.flyout)
@@ -182,11 +239,17 @@ class BaseEPW(QWidget):
         # 事件过滤器拦截ContextMenu，并启动相对应位置中预设的右键菜单
         if event.type() == QEvent.Type.ContextMenu:
             if watch is self.ui.excelFile_LW:
-                self.excelFile_LW_Menu.exec(event.globalPos(), aniType=MenuAnimationType.DROP_DOWN)
+                self.excelFile_LW_Menu.exec(
+                    event.globalPos(), aniType=MenuAnimationType.DROP_DOWN
+                )
             elif watch is self.ui.excelData_TW:
-                self.excelData_TW_Menu.exec(event.globalPos(), aniType=MenuAnimationType.DROP_DOWN)
+                self.excelData_TW_Menu.exec(
+                    event.globalPos(), aniType=MenuAnimationType.DROP_DOWN
+                )
             elif watch is self.ui.sameYTCount_TW:
-                self.sameYTCount_TW_Menu.exec(event.globalPos(), aniType=MenuAnimationType.DROP_DOWN)
+                self.sameYTCount_TW_Menu.exec(
+                    event.globalPos(), aniType=MenuAnimationType.DROP_DOWN
+                )
         return super().eventFilter(watch, event)
 
     def initKeepShipNum_SPB(self):

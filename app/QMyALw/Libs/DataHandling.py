@@ -8,10 +8,17 @@ from app.QMyVDPw.Libs.QMyVDPwEnum import YTCETEnum
 def JudgeWhetherTheConditionsAreMet(tableDataList):
     newTableDataList = []
 
-    for oneDimensionalIndex, oneDimensionalDataList in enumerate(tableDataList):  # 用enumrate的方法同时获取坐标和数据
+    for oneDimensionalIndex, oneDimensionalDataList in enumerate(
+        tableDataList
+    ):  # 用enumrate的方法同时获取坐标和数据
         state = True
-        for twoDimensionalIndex, twoDimensionalDataList in enumerate(oneDimensionalDataList):
-            if str(twoDimensionalDataList) != "0" and str(twoDimensionalDataList) != "None":
+        for twoDimensionalIndex, twoDimensionalDataList in enumerate(
+            oneDimensionalDataList
+        ):
+            if (
+                str(twoDimensionalDataList) != "0"
+                and str(twoDimensionalDataList) != "None"
+            ):
                 state = True
             else:
                 state = False
@@ -25,14 +32,26 @@ def JudgeWhetherTheConditionsAreMet(tableDataList):
 def upperOrderTop(tableDataList):
     # 如果第一列数据不为 指定空值 则将这一行列表放到最上面
     # 可以用list的sort方法做四次排序
-    tableDataList.sort(key=lambda elem: str(elem[YTcontrastTWEnum.shipExist.value]), reverse=True)
-    tableDataList.sort(key=lambda elem: str(elem[YTcontrastTWEnum.shipCoordinateName.value]), reverse=True)
-    tableDataList.sort(key=lambda elem: str(elem[YTcontrastTWEnum._shipFilePath.value]), reverse=True)
-    tableDataList.sort(key=lambda elem: str(elem[YTcontrastTWEnum._shipCoordinatePath.value]), reverse=True)
+    tableDataList.sort(
+        key=lambda elem: str(elem[YTcontrastTWEnum.shipExist.value]), reverse=True
+    )
+    tableDataList.sort(
+        key=lambda elem: str(elem[YTcontrastTWEnum.shipCoordinateName.value]),
+        reverse=True,
+    )
+    tableDataList.sort(
+        key=lambda elem: str(elem[YTcontrastTWEnum._shipFilePath.value]), reverse=True
+    )
+    tableDataList.sort(
+        key=lambda elem: str(elem[YTcontrastTWEnum._shipCoordinatePath.value]),
+        reverse=True,
+    )
     return tableDataList
 
 
-def YTContrastDataSortingProcessing(EPW_YT_RangeList, jpegFilePathList, labelTxtPathList):
+def YTContrastDataSortingProcessing(
+    EPW_YT_RangeList, jpegFilePathList, labelTxtPathList
+):
     # 月台对照表数据排序
     # 三个列表 取元素0对比排序
     tableData = []
@@ -43,15 +62,23 @@ def YTContrastDataSortingProcessing(EPW_YT_RangeList, jpegFilePathList, labelTxt
             print(jpegFileNameExt)
             jpegFileName, jpegFileExt = os.path.splitext(jpegFileNameExt)
             if shipcopy == jpegFileName:
-                EPW_YT_RangeList[YTIndex][YTcontrastTWEnum.shipExist.value] = jpegFileNameExt
-                EPW_YT_RangeList[YTIndex][YTcontrastTWEnum._shipFilePath.value] = jpegFIlePath
+                EPW_YT_RangeList[YTIndex][
+                    YTcontrastTWEnum.shipExist.value
+                ] = jpegFileNameExt
+                EPW_YT_RangeList[YTIndex][
+                    YTcontrastTWEnum._shipFilePath.value
+                ] = jpegFIlePath
         for labelIndex, labelTxtPath in enumerate(labelTxtPathList):
             labelTxtFileNameExt = os.path.basename(labelTxtPath)
             print(labelTxtFileNameExt)
             labelTxtFileName, labelTxtFileExt = os.path.splitext(labelTxtFileNameExt)
             if shipcopy == labelTxtFileName:
-                EPW_YT_RangeList[YTIndex][YTcontrastTWEnum.shipCoordinateName.value] = labelTxtFileNameExt
-                EPW_YT_RangeList[YTIndex][YTcontrastTWEnum._shipCoordinatePath.value] = labelTxtPath
+                EPW_YT_RangeList[YTIndex][
+                    YTcontrastTWEnum.shipCoordinateName.value
+                ] = labelTxtFileNameExt
+                EPW_YT_RangeList[YTIndex][
+                    YTcontrastTWEnum._shipCoordinatePath.value
+                ] = labelTxtPath
         # if EPW_YT_RangeList[YTIndex][YTcontrastTWEnum._shipCoordinatePath.value] == 0:
 
         # 一轮循环下来还是找不到就给一个默认赋值 不能空着 后面不好处理
@@ -84,17 +111,25 @@ def getAllFilesUnderThePath(folderPath, includeSubfolders, extension):
         for oneLevelpath in os.listdir(folderPath):
             absOneLevelpath = os.path.join(folderPath, oneLevelpath)
             if os.path.isdir(absOneLevelpath):  # 仅向下延伸一层    #注意拼合路径
-                for twoLevelpath in os.listdir(absOneLevelpath):  # listdir返回的是当前层级的路径名称
+                for twoLevelpath in os.listdir(
+                    absOneLevelpath
+                ):  # listdir返回的是当前层级的路径名称
                     absTwoLevelpath = os.path.join(absOneLevelpath, twoLevelpath)
                     if os.path.isfile(absTwoLevelpath):
-                        fileAddress = absTwoLevelpath.replace("\\", "/")  # 统一路径分隔符
+                        fileAddress = absTwoLevelpath.replace(
+                            "\\", "/"
+                        )  # 统一路径分隔符
                         fileAddressList.append(fileAddress)  #
-            elif os.path.isfile(absOneLevelpath):  # 当前路径下的文件也要添加 一般不会存在 但
+            elif os.path.isfile(
+                absOneLevelpath
+            ):  # 当前路径下的文件也要添加 一般不会存在 但
                 fileAddress = absOneLevelpath.replace("\\", "/")  # 统一路径分隔符
                 fileAddressList.append(fileAddress)  #
 
     elif includeSubfolders is False:  # 获取本级所有文件名
-        for filePath in os.listdir(folderPath):  # 上面那个文件列表是walk给的 然而这个本级的函数会返回本级文件夹和文件
+        for filePath in os.listdir(
+            folderPath
+        ):  # 上面那个文件列表是walk给的 然而这个本级的函数会返回本级文件夹和文件
             filePath = os.path.join(folderPath, filePath)
             if os.path.isfile(filePath):  # 所以还需要做一个isfile的判断
                 filePath = filePath.replace("\\", "/")
@@ -118,10 +153,14 @@ def getPrimaryPathInPathList(pathLists, folderPath):
     #
     for index, pathList in enumerate(pathLists):
         if pathList[0] is None:  # 索引0位是存储primayPathEnd的
-            primaryPath = os.path.split(folderPath)[-1]  # 从这个abspath中取出 本级路径字符串
+            primaryPath = os.path.split(folderPath)[
+                -1
+            ]  # 从这个abspath中取出 本级路径字符串
             # C:/Users/admin/Documents/ATO/atowidgets/QMyALw 取出 QMyAlw
             FilePathList = pathList[1].split("/")  # 遍历所有文件路径 并分割各层级
-            PriFilepath = FilePathList[FilePathList.index(primaryPath):]  # 从上面的文件层级列表中找到指定路径的索引位置
+            PriFilepath = FilePathList[
+                FilePathList.index(primaryPath) :
+            ]  # 从上面的文件层级列表中找到指定路径的索引位置
             primaryPathEnd = "/".join(PriFilepath)  # 截取出来后 再用路径分割符合并
             pathLists[index][0] = primaryPathEnd  # 最后把原来的None替换为
     return pathLists
@@ -133,14 +172,20 @@ def listContentDeDuplication(listOne, listTwo):
     # 因为是二维对一维所以手动去重
     if not listOne:  # 如果listOne为空 说明组件上面还没有信息
         for element in listTwo:  # 既然listOne为空 那就直接用了吧
-            listOne.append([None, element])  # 这不仅是一个去重函数 也需要把数据做下格式返回出去
+            listOne.append(
+                [None, element]
+            )  # 这不仅是一个去重函数 也需要把数据做下格式返回出去
         return listOne
 
     for index, listOneData in enumerate(listOne):
         # listOneData 是这样的['Desktop/1.dav', 'C:/Users/admin/Desktop/1.dav']
         filePath1 = listOneData[1]
-        if listTwo.count(filePath1):  # 用list的count方法检测第二列表中有没有这个相同的路径
-            listTwo.pop(listTwo.index(filePath1))  # 如果不为零说明存在，找到索引然后弹出
+        if listTwo.count(
+            filePath1
+        ):  # 用list的count方法检测第二列表中有没有这个相同的路径
+            listTwo.pop(
+                listTwo.index(filePath1)
+            )  # 如果不为零说明存在，找到索引然后弹出
     for element in listTwo:  # 第二个列表去重后就可以按格式添加进第一个列表中了
         listOne.append([None, element])
     return listOne
@@ -155,7 +200,10 @@ def getFileNameInFilePath(fileAddress):
 
 def YTcontrastTWDataHandle(EPW_ExcelDataTW_Data):
     # 参数为EPW原始数据和月台配置表的文件地址
-    YTcontrastTWListSizeTemplate = [[0 for _ in range(len(YTcontrastTWEnum))] for _ in range(len(EPW_ExcelDataTW_Data))]
+    YTcontrastTWListSizeTemplate = [
+        [0 for _ in range(len(YTcontrastTWEnum))]
+        for _ in range(len(EPW_ExcelDataTW_Data))
+    ]
     # 创建一个和月台对照表枚举数列相等大小的列表大小模板
     # 然后像VDPw一样先填充excel数据,然后添加月台相对应的范围参数
     tableDataList1 = fillExclData(YTcontrastTWListSizeTemplate, EPW_ExcelDataTW_Data)
@@ -181,10 +229,12 @@ def contrastYT(tableDataList, configData):
         for configList in configData:
             configDataYTText = configList[YTCETEnum.YTCOLUMN.value]
             if dataListYTText == configDataYTText:
-                tableDataList[DLI][YTcontrastTWEnum.assemblyLineRange.value] = configList[
-                    YTCETEnum.ASSEMBLYLINERANGE.value]
-                tableDataList[DLI][YTcontrastTWEnum.weighingPlatformRange.value] = configList[
-                    YTCETEnum.BEDPLATERANGE.value]
+                tableDataList[DLI][YTcontrastTWEnum.assemblyLineRange.value] = (
+                    configList[YTCETEnum.ASSEMBLYLINERANGE.value]
+                )
+                tableDataList[DLI][YTcontrastTWEnum.weighingPlatformRange.value] = (
+                    configList[YTCETEnum.BEDPLATERANGE.value]
+                )
         if tableDataList[DLI][YTcontrastTWEnum.assemblyLineRange.value] == 0:
             tableDataList[DLI][YTcontrastTWEnum.assemblyLineRange.value] = "未找到"
             tableDataList[DLI][YTcontrastTWEnum.weighingPlatformRange.value] = "未找到"
@@ -196,14 +246,19 @@ def contrastYT(tableDataList, configData):
 def fillExclData(YTcontrastTWListSizeTemplate, EPW_ExcelDataTW_Data):
     # 相对应的位置填充上EPW的原始数据
     for i in range(len(EPW_ExcelDataTW_Data)):
-        YTcontrastTWListSizeTemplate[i][YTcontrastTWEnum.shipCopy.value] = EPW_ExcelDataTW_Data[i][
-            EDTWEnum.ShipID.value]
-        YTcontrastTWListSizeTemplate[i][YTcontrastTWEnum.YT.value] = EPW_ExcelDataTW_Data[i][EDTWEnum.YT.value]
+        YTcontrastTWListSizeTemplate[i][YTcontrastTWEnum.shipCopy.value] = (
+            EPW_ExcelDataTW_Data[i][EDTWEnum.ShipID.value]
+        )
+        YTcontrastTWListSizeTemplate[i][YTcontrastTWEnum.YT.value] = (
+            EPW_ExcelDataTW_Data[i][EDTWEnum.YT.value]
+        )
         # 单号和月台
     return YTcontrastTWListSizeTemplate
 
 
 if __name__ == "__main__":
-    getAllFilesUnderThePath(r"C:\Users\admin\Documents\ATO\QMyWidgets\QMyALw", False, "dav")
+    getAllFilesUnderThePath(
+        r"C:\Users\admin\Documents\ATO\QMyWidgets\QMyALw", False, "dav"
+    )
 
 # 先用那什么库试一下
