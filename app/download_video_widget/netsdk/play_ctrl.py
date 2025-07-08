@@ -29,7 +29,11 @@ class VideoTsPic(QObject):
     def do_directoryChanged(self, path):
         curfileList = set()
         dirPath = Path(path)
-        [curfileList.add(file) for file in dirPath.iterdir() if file.is_file() and file.suffix == ".mp4"]
+        [
+            curfileList.add(file)
+            for file in dirPath.iterdir()
+            if file.is_file() and file.suffix == ".mp4"
+        ]
         time.sleep(2)
         # 先获取mp4文件列表
         for filePath in curfileList:

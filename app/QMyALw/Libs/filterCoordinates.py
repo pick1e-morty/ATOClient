@@ -12,7 +12,9 @@ def drawCoordinates(jpegFileAddress, specifyCoordinate):
     # 再开一个文件夹放这个图片 叫filter/
     parentFolderAddress, fileNamePath = os.path.split(jpegFileAddress)
     newParentFolderAddress = os.path.join(parentFolderAddress, "filter")
-    newFilePath = os.path.join(newParentFolderAddress, fileNamePath)  # 新的文件地址是原文件的父级追加名为filter的文件夹
+    newFilePath = os.path.join(
+        newParentFolderAddress, fileNamePath
+    )  # 新的文件地址是原文件的父级追加名为filter的文件夹
     if os.path.exists(newParentFolderAddress) is not True:  # 如果路径不存在则创建
         os.makedirs(newParentFolderAddress)
     im = Image.open(jpegFileAddress)
@@ -35,14 +37,25 @@ def filterAndDrawPackageCoordinates(tableDataList):
     # 需要获取txt中的坐标 处理之后再画图
     for dataList in tableDataList:
         pictureFileAddress = dataList[YTcontrastTWEnum._shipFilePath.value]  # 图片地址
-        labelTxtFileAddress = dataList[YTcontrastTWEnum._shipCoordinatePath.value]  # 相对应的坐标文本文件地址
-        assemblyLineRange = dataList[YTcontrastTWEnum.assemblyLineRange.value]  # 线体多边形坐标
-        weighingPlatformRange = dataList[YTcontrastTWEnum.weighingPlatformRange.value]  # 称台多边形坐标
-        packageCoordinatesClosestToTheWeighingTable = handleCoordinates(labelTxtFileAddress, assemblyLineRange,
-                                                                        weighingPlatformRange)  #
+        labelTxtFileAddress = dataList[
+            YTcontrastTWEnum._shipCoordinatePath.value
+        ]  # 相对应的坐标文本文件地址
+        assemblyLineRange = dataList[
+            YTcontrastTWEnum.assemblyLineRange.value
+        ]  # 线体多边形坐标
+        weighingPlatformRange = dataList[
+            YTcontrastTWEnum.weighingPlatformRange.value
+        ]  # 称台多边形坐标
+        packageCoordinatesClosestToTheWeighingTable = handleCoordinates(
+            labelTxtFileAddress, assemblyLineRange, weighingPlatformRange
+        )  #
 
-        if packageCoordinatesClosestToTheWeighingTable:  # 坐标处理完就剩一个符合条件的坐标 在图片上画下这个矩形
-            drawCoordinates(pictureFileAddress, packageCoordinatesClosestToTheWeighingTable)
+        if (
+            packageCoordinatesClosestToTheWeighingTable
+        ):  # 坐标处理完就剩一个符合条件的坐标 在图片上画下这个矩形
+            drawCoordinates(
+                pictureFileAddress, packageCoordinatesClosestToTheWeighingTable
+            )
     # 坐标处理完
     print("处理结束")
 
@@ -55,15 +68,23 @@ def handleCoordinates(labelTxtFileAddress, assemblyLineRange, weighingPlatformRa
     # 第三步 是判断距离，因为这个包裹虽然在线体上但它可能不会在称台上 这一步写函数判断原点距离 取出最近的那个
     # ！！！ 但注意，距离最近的那个可能不准确，因为真正给距离称台最近的那个可能没被yolo标记出来 这个靠完善模型就好了
     # 第四步 拿到那个唯一的矩形坐标 然后画图
-    coordinateList = getCoordinatesInFile(labelTxtFileAddress)  # yolo标记文件中的xywh坐标列表
-    assemblyLinePolygonEndPoint = getPolygonEndpoint(assemblyLineRange)  # 线体多边形坐标转一下符合规则的列表
-    weighingPlatformPolygonEndPoint = [int(elem) for elem in weighingPlatformRange.split(",")]  # 原点坐标文本转列表
-    inAssemblyLineRangePackagePoint = DetermineWhetherTheCoordinatesAreInThePolygon(coordinateList,
-                                                                                    assemblyLinePolygonEndPoint)
+    coordinateList = getCoordinatesInFile(
+        labelTxtFileAddress
+    )  # yolo标记文件中的xywh坐标列表
+    assemblyLinePolygonEndPoint = getPolygonEndpoint(
+        assemblyLineRange
+    )  # 线体多边形坐标转一下符合规则的列表
+    weighingPlatformPolygonEndPoint = [
+        int(elem) for elem in weighingPlatformRange.split(",")
+    ]  # 原点坐标文本转列表
+    inAssemblyLineRangePackagePoint = DetermineWhetherTheCoordinatesAreInThePolygon(
+        coordinateList, assemblyLinePolygonEndPoint
+    )
     if len(inAssemblyLineRangePackagePoint):
         # 先排除不在线体(多边形)中的原点点(yolo矩形的中点)
-        packageCoordinatesClosestToTheWeighingTable = findTheNearestPoint(inAssemblyLineRangePackagePoint,
-                                                                          weighingPlatformPolygonEndPoint)
+        packageCoordinatesClosestToTheWeighingTable = findTheNearestPoint(
+            inAssemblyLineRangePackagePoint, weighingPlatformPolygonEndPoint
+        )
         # 再从这些矩形中找出距离称台原点最近的那个原点(yolo矩形的中点) 再次声明，真正距离最近的原点受yolo识别准确率所影响
         if packageCoordinatesClosestToTheWeighingTable:  # 如果这个坐标存在则返回
             return packageCoordinatesClosestToTheWeighingTable
@@ -86,12 +107,20 @@ def findTheNearestPoint(inAssemblyLineRangePackagePoint, weighingPlatformRange):
         y1 = weighingPlatformRange[0]
         y2 = weighingPlatformRange[1]  # 一个数学公式 求极坐标上两个原点的距离
         # pointDistance = round(math.sqrt((x1 - y1) ** 2 + (x2 - y2) ** 2))
-        pointDistance = round(math.sqrt(math.pow((y1 - x1), 2) + math.pow((y2 - x2), 2)))
-        inAssemblyLineRangePackagePoint[pointIndex].append(pointDistance)  # 把距离追加到相应坐标列表的末尾
+        pointDistance = round(
+            math.sqrt(math.pow((y1 - x1), 2) + math.pow((y2 - x2), 2))
+        )
+        inAssemblyLineRangePackagePoint[pointIndex].append(
+            pointDistance
+        )  # 把距离追加到相应坐标列表的末尾
 
     # 从大到小对这个列表的第五个元素(下标为4)进行正向排序，这样距离最近的原点就是第一个列表了
-    inAssemblyLineRangePackagePoint.sort(key=lambda element: element[4])  # 排序，根据第五个元素(下标为4)进行正向排序
-    thePoint = inAssemblyLineRangePackagePoint[0][:4]  # 取出这个列表中的第一个坐标行 下标5是原点所以不用取
+    inAssemblyLineRangePackagePoint.sort(
+        key=lambda element: element[4]
+    )  # 排序，根据第五个元素(下标为4)进行正向排序
+    thePoint = inAssemblyLineRangePackagePoint[0][
+        :4
+    ]  # 取出这个列表中的第一个坐标行 下标5是原点所以不用取
     print(inAssemblyLineRangePackagePoint)
     return thePoint
 
@@ -122,8 +151,12 @@ def DetermineWhetherTheCoordinatesAreInThePolygon(coordinateList, assemblyLineRa
         packageCenterY = y + round(h / 2)  # 中心y
         print(packageCenterY)
         packageRectangularCenter = [packageCenterX, packageCenterY]
-        if isPoiWithinSimplePoly(packageRectangularCenter, assemblyLineRange):  # ctrlC过来的 判断一个原点是否在多边形中
-            inAssemblyLineRangePackagePoint.append(packageCoordinate)  # 如果为真则把这个原点的xywh坐标添加到新列表中
+        if isPoiWithinSimplePoly(
+            packageRectangularCenter, assemblyLineRange
+        ):  # ctrlC过来的 判断一个原点是否在多边形中
+            inAssemblyLineRangePackagePoint.append(
+                packageCoordinate
+            )  # 如果为真则把这个原点的xywh坐标添加到新列表中
     print(inAssemblyLineRangePackagePoint)  # 这一步收集原点用处不大
     return inAssemblyLineRangePackagePoint
 
@@ -152,7 +185,12 @@ def getCoordinatesInFile(labelTxtFileAddress):
 def isPoiWithinBox(poi, sbox, toler=0.0001):
     # sbox=[[x1,y1],[x2,y2]]
     # 不考虑在边界上，需要考虑就加等号
-    if poi[0] > sbox[0][0] and poi[0] < sbox[1][0] and poi[1] > sbox[0][1] and poi[1] < sbox[1][1]:
+    if (
+        poi[0] > sbox[0][0]
+        and poi[0] < sbox[1][0]
+        and poi[1] > sbox[0][1]
+        and poi[1] < sbox[1][1]
+    ):
         return True
     if toler > 0:
         pass
@@ -173,7 +211,9 @@ def isRayIntersectsSegment(poi, s_poi, e_poi):  # [x,y] [lng,lat]
         return False
     if s_poi[0] < poi[0] and e_poi[1] < poi[1]:
         return False
-    xseg = e_poi[0] - (e_poi[0] - s_poi[0]) * (e_poi[1] - poi[1]) / (e_poi[1] - s_poi[1])  # 求交
+    xseg = e_poi[0] - (e_poi[0] - s_poi[0]) * (e_poi[1] - poi[1]) / (
+        e_poi[1] - s_poi[1]
+    )  # 求交
     if xseg < poi[0]:
         return False
     return True
@@ -204,7 +244,11 @@ if __name__ == "__main__":
     #     "508,719-346,46-333,1-502,1-1088,717", "620,382")
     packageCoordinatesClosestToTheWeighingTable = handleCoordinates(
         r"C:\Users\admin\Documents\ATO\videoprocess\1.20\exp\labels\318218657832622.txt",
-        "773,719-640,60-717,55-1042,356-1280,720", "811,432")
+        "773,719-640,60-717,55-1042,356-1280,720",
+        "811,432",
+    )
     # if packageCoordinatesClosestToTheWeighingTable:
-    drawCoordinates(r"C:\Users\admin\Documents\ATO\videoprocess\1.20\318218657832622.jpeg",
-                    packageCoordinatesClosestToTheWeighingTable)
+    drawCoordinates(
+        r"C:\Users\admin\Documents\ATO\videoprocess\1.20\318218657832622.jpeg",
+        packageCoordinatesClosestToTheWeighingTable,
+    )

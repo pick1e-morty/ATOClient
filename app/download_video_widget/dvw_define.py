@@ -4,8 +4,14 @@ from typing import Dict
 
 
 class DownloadArg(object):
-    def __init__(self, channel: int = None, ytName: str = None, savePath: str = None, downloadTime: datetime.datetime = None):
-        __slots__ = ['channel', 'ytName', 'savePath', 'downloadTime', 'downloadTime']
+    def __init__(
+        self,
+        channel: int = None,
+        ytName: str = None,
+        savePath: str = None,
+        downloadTime: datetime.datetime = None,
+    ):
+        __slots__ = ["channel", "ytName", "savePath", "downloadTime", "downloadTime"]
         super().__init__()
         self.channel = channel  # 通道和月台名称只需要存储一次就行了。
         self.ytName = ytName  # 如果用字典的话，那就是key是channel，然后ytName是这个字典的一个属性，但是存储文件路径和下载时间的时候就需要用append了
@@ -14,7 +20,14 @@ class DownloadArg(object):
 
 
 class DevLoginAndDownloadArgStruct(object):
-    __slots__ = ['devType', 'devIP', 'devPort', 'devUserName', 'devPassword', 'downloadArgList']
+    __slots__ = [
+        "devType",
+        "devIP",
+        "devPort",
+        "devUserName",
+        "devPassword",
+        "downloadArgList",
+    ]
 
     def __init__(self):
         self.devType = None  # 设备类型
@@ -40,6 +53,7 @@ class DVWTableWidgetEnum(Enum):
     """
     用于区分表格组件的枚举
     """
+
     DOWNLOAD_STATUS_TABLE = 0  # 下载状态表格
     DOWNLOAD_PROGRESS_TABLE = 1  # 下载进度表格
 

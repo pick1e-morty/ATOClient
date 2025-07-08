@@ -6,13 +6,22 @@ from pathlib import Path
 from time import sleep
 
 from UnifyNetSDK import DaHuaNetSDK
-from UnifyNetSDK.dahua.dh_netsdk_exception import DHNetSDKException  # TODO 这个地方的导入应该是有办法统一一下的
-from UnifyNetSDK.parameter import UnifyLoginArg, UnifyDownLoadByTimeArg, UnifyFindFileByTimeArg
+from UnifyNetSDK.dahua.dh_netsdk_exception import (
+    DHNetSDKException,
+)  # TODO 这个地方的导入应该是有办法统一一下的
+from UnifyNetSDK.parameter import (
+    UnifyLoginArg,
+    UnifyDownLoadByTimeArg,
+    UnifyFindFileByTimeArg,
+)
 
 from loguru import logger
 
 from app.download_video_widget.utils.video2pic import tsPic
-from app.download_video_widget.dvw_define import DevLoginAndDownloadArgStruct, DVWTableWidgetEnum
+from app.download_video_widget.dvw_define import (
+    DevLoginAndDownloadArgStruct,
+    DVWTableWidgetEnum,
+)
 
 
 dahuaClient = None
@@ -25,7 +34,9 @@ dahuaClient = None
 
 
 class StopDownloadHandleThread(threading.Thread):
-    def __init__(self, downloadHandleDict, downloadHandleDictCondition, updateDownloadStatusFun):
+    def __init__(
+        self, downloadHandleDict, downloadHandleDictCondition, updateDownloadStatusFun
+    ):
         """
         downloadHandleDictCondition起到了一个lock的作用，锁的是downloadHandleDict
         另外，如果downloadHandleDict是空的，线程休眠，不消耗资源。
@@ -43,7 +54,9 @@ class StopDownloadHandleThread(threading.Thread):
         threading.Thread.__init__(self)
         self.producerDone = False  # 线程结束的标志
         self.downloadHandleDict = downloadHandleDict  # 下载句柄字典
-        self.downloadHandleDictCondition = downloadHandleDictCondition  # 下载句柄字典的锁
+        self.downloadHandleDictCondition = (
+            downloadHandleDictCondition  # 下载句柄字典的锁
+        )
         self.updateDownloadStatusFun = updateDownloadStatusFun  # 统一上报下载状态的函数
 
     def setDone(self):
@@ -53,12 +66,20 @@ class StopDownloadHandleThread(threading.Thread):
     def run(self):
         while True:
             with self.downloadHandleDictCondition:
-                if not self.downloadHandleDict:  # 注意，我用了两个with condition，由于查询是个非常耗时的操作，查询的期间是不影响生产者继续添加句柄的。
-                    if self.producerDone is True:  # 如果下载句柄列表为空，且生产者发出完毕信号，则跳出永真循环（线程结束）。
-                        logger.info(f"{self.getName()}的StopDownloadConsumer子线程正常关闭")
+                if (
+                    not self.downloadHandleDict
+                ):  # 注意，我用了两个with condition，由于查询是个非常耗时的操作，查询的期间是不影响生产者继续添加句柄的。
+                    if (
+                        self.producerDone is True
+                    ):  # 如果下载句柄列表为空，且生产者发出完毕信号，则跳出永真循环（线程结束）。
+                        logger.info(
+                            f"{self.getName()}的StopDownloadConsumer子线程正常关闭"
+                        )
                         break
                     self.downloadHandleDictCondition.wait()  # 如果下载句柄列表为空，但生产者没有发出完毕信号，则线程阻塞等待。
-            for downloadHandle in list(self.downloadHandleDict.keys()):  # 迭代字典的时候不允许更改字典（下面进行了一个pop操作），所以做了个keys的副本
+            for downloadHandle in list(
+                self.downloadHandleDict.keys()
+            ):  # 迭代字典的时候不允许更改字典（下面进行了一个pop操作），所以做了个keys的副本
                 # 上面取key是原子的，但是list()不是原子操作。这正好，因为由于查询是个非常耗时的操作，查询的期间是不影响生产者继续添加句柄的。就等下一批再处理呗
                 stopRestlt = dahuaClient.stopDownLoadTimer(downloadHandle)
                 if stopRestlt is True:
@@ -76,12 +97,20 @@ class StopDownloadHandleThread(threading.Thread):
             sleep(0.5)
 
 
-def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: DevLoginAndDownloadArgStruct):
+def dahuaDownloader(
+    downloadResultList,
+    downloadResultListCondition,
+    devArgs: DevLoginAndDownloadArgStruct,
+):
     # 参数还要加，是否查找录像，日志保存地址，
 
     deviceAddress = None  # 记录下整个py文件内没有变化的ip地址，这样就不用每次都传了
 
-    def updateDownloadStatusFun(f_iNDEX, f_status, widgetEnum: DVWTableWidgetEnum = DVWTableWidgetEnum.DOWNLOAD_STATUS_TABLE):
+    def updateDownloadStatusFun(
+        f_iNDEX,
+        f_status,
+        widgetEnum: DVWTableWidgetEnum = DVWTableWidgetEnum.DOWNLOAD_STATUS_TABLE,
+    ):
         """
         统一上报状态的函数,DVWTableWidgetEnum默认是下载状态表格DOWNLOAD_STATUS_TABLE，多数数据都是往这个表格上报的
         如果widgetEnum = DOWNLOAD_PROGRESS_TABLE，那f_iNDEX就是没有意义的数字
@@ -92,7 +121,13 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
         with downloadResultListCondition:
             downloadResultListCondition.notify()
 
-    def execute_operation(func, funcArgs, sucessText, errorText, widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE):
+    def execute_operation(
+        func,
+        funcArgs,
+        sucessText,
+        errorText,
+        widgetEnum=DVWTableWidgetEnum.DOWNLOAD_PROGRESS_TABLE,
+    ):
         # TDOO 就是这里，改造为装饰器，一般情况下只需要传两个参数就好了
         # 目前都是执行的sdk的方法，且上报状态也都是发给下载进度表格的
         try:
@@ -112,25 +147,41 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
     easy_login_info.userName = devArgs.devUserName
     easy_login_info.userPassword = devArgs.devPassword
     easy_login_info.devicePort = devArgs.devPort
-    easy_login_info.deviceAddress = deviceAddress = devArgs.devIP  # 先做取deviceAddress，因为下面的init也要以设备ip地址做报错根源参照
+    easy_login_info.deviceAddress = deviceAddress = (
+        devArgs.devIP
+    )  # 先做取deviceAddress，因为下面的init也要以设备ip地址做报错根源参照
 
     dahuaClient = DaHuaNetSDK()
     execute_operation(dahuaClient.init, [], "初始化成功", "初始化失败")
     absLogPath = Path(__file__).absolute().parent.parent.parent
-    absLogPath = absLogPath.joinpath("dh_netsdk_log/netsdk1.log")  # TODO 打包阶段时要将log统一对齐到rootPath/log文件夹下
+    absLogPath = absLogPath.joinpath(
+        "dh_netsdk_log/netsdk1.log"
+    )  # TODO 打包阶段时要将log统一对齐到rootPath/log文件夹下
     logger.info(f"大华netsdk的log地址为{str(absLogPath)}")
-    execute_operation(dahuaClient.logopen, [str(absLogPath)], "打开日志成功", "打开日志失败")
+    execute_operation(
+        dahuaClient.logopen, [str(absLogPath)], "打开日志成功", "打开日志失败"
+    )
 
-    userID, device_info = execute_operation(dahuaClient.login, [easy_login_info], "登录成功", "登录失败")
+    userID, device_info = execute_operation(
+        dahuaClient.login, [easy_login_info], "登录成功", "登录失败"
+    )
     # if userID == 0:
     #     logger.error("登录失败")
     #     sys.exit(1)
-    print("硬盘数量", device_info.stuDeviceInfo.nDiskNum)  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
+    print(
+        "硬盘数量", device_info.stuDeviceInfo.nDiskNum
+    )  # 除了返回登陆句柄外的 验证真正成功登录了设备的标志
 
-    downloadHandleDict = {}  # key是下载句柄，value是downloadArg.savePath，下载地址。iNDEX,下载参数在列表中的索引
+    downloadHandleDict = (
+        {}
+    )  # key是下载句柄，value是downloadArg.savePath，下载地址。iNDEX,下载参数在列表中的索引
     downloadHandleDictCondition = threading.Condition()  # 下载句柄字典的锁，线程安全
-    stopDownloadThreadInstance = StopDownloadHandleThread(downloadHandleDict, downloadHandleDictCondition, updateDownloadStatusFun)
-    stopDownloadThreadInstance.setName(str(devArgs.devIP))  # 给线程加个名字(以IP为单位)，查错的时候方便点
+    stopDownloadThreadInstance = StopDownloadHandleThread(
+        downloadHandleDict, downloadHandleDictCondition, updateDownloadStatusFun
+    )
+    stopDownloadThreadInstance.setName(
+        str(devArgs.devIP)
+    )  # 给线程加个名字(以IP为单位)，查错的时候方便点
     stopDownloadThreadInstance.start()
 
     for iNDEX, downloadArg in enumerate(devArgs.downloadArgList):
@@ -158,7 +209,9 @@ def dahuaDownloader(downloadResultList, downloadResultListCondition, devArgs: De
             status = str(type(e).__name__)
             updateDownloadStatusFun(iNDEX, status)
 
-    with downloadHandleDictCondition:  # 如果没有一个下载句柄传过去的话，就需要手动解锁一下，让子线程顺利关闭
+    with (
+        downloadHandleDictCondition
+    ):  # 如果没有一个下载句柄传过去的话，就需要手动解锁一下，让子线程顺利关闭
         downloadHandleDictCondition.notify()
     stopDownloadThreadInstance.setDone()
     stopDownloadThreadInstance.join(10)  # 超时10秒，

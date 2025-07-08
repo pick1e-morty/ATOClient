@@ -44,7 +44,9 @@ def tsPic(absVideoPath: [str, Path], absPicPath: str = None):
         closeResult = playClient.close(nPort)
         releaseResult = playClient.releasePort(nPort)
     except DHPlaySDKException as e:
-        logger.error(f"{absVideoPath}转换失败，源文件已保留，错误代码{type(e).__name__}")
+        logger.error(
+            f"{absVideoPath}转换失败，源文件已保留，错误代码{type(e).__name__}"
+        )
         if playClient and nPort:
             if playResult and not stopResult:
                 playClient.stop(nPort)

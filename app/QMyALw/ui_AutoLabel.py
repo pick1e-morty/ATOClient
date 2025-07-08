@@ -20,7 +20,9 @@ class Ui_ALWC(object):
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.groupBox = QtWidgets.QGroupBox(ALWC)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
@@ -67,7 +69,9 @@ class Ui_ALWC(object):
         self.line_3.setObjectName("line_3")
         self.verticalLayout_2.addWidget(self.line_3)
         self.groupBox_2 = QtWidgets.QGroupBox(ALWC)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
@@ -114,7 +118,9 @@ class Ui_ALWC(object):
         self.confidenceDSB.setObjectName("confidenceDSB")
         self.gridLayout_4.addWidget(self.confidenceDSB, 0, 1, 1, 1)
         self.label_3 = QtWidgets.QLabel(self.groupBox_3)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
@@ -163,7 +169,9 @@ class Ui_ALWC(object):
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.label_4 = QtWidgets.QLabel(self.groupBox_5)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label_4.sizePolicy().hasHeightForWidth())
@@ -175,10 +183,14 @@ class Ui_ALWC(object):
         self.label_4.setObjectName("label_4")
         self.horizontalLayout_3.addWidget(self.label_4)
         self.meetTheFilteringConditionsLE = QtWidgets.QLineEdit(self.groupBox_5)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.meetTheFilteringConditionsLE.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.meetTheFilteringConditionsLE.sizePolicy().hasHeightForWidth()
+        )
         self.meetTheFilteringConditionsLE.setSizePolicy(sizePolicy)
         self.meetTheFilteringConditionsLE.setMaximumSize(QtCore.QSize(53, 16777215))
         font = QtGui.QFont()
@@ -188,7 +200,9 @@ class Ui_ALWC(object):
         self.meetTheFilteringConditionsLE.setObjectName("meetTheFilteringConditionsLE")
         self.horizontalLayout_3.addWidget(self.meetTheFilteringConditionsLE)
         self.label_5 = QtWidgets.QLabel(self.groupBox_5)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label_5.sizePolicy().hasHeightForWidth())
@@ -201,18 +215,26 @@ class Ui_ALWC(object):
         self.horizontalLayout_3.addWidget(self.label_5)
         self.gridLayout_5.addLayout(self.horizontalLayout_3, 0, 0, 1, 2)
         self.ALWiniWidgetPB = QtWidgets.QPushButton(self.groupBox_5)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.ALWiniWidgetPB.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.ALWiniWidgetPB.sizePolicy().hasHeightForWidth()
+        )
         self.ALWiniWidgetPB.setSizePolicy(sizePolicy)
         self.ALWiniWidgetPB.setObjectName("ALWiniWidgetPB")
         self.gridLayout_5.addWidget(self.ALWiniWidgetPB, 2, 0, 1, 1)
         self.startFilteringPB = QtWidgets.QPushButton(self.groupBox_5)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.startFilteringPB.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.startFilteringPB.sizePolicy().hasHeightForWidth()
+        )
         self.startFilteringPB.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setPointSize(10)
@@ -227,7 +249,9 @@ class Ui_ALWC(object):
         self.line_2.setObjectName("line_2")
         self.gridLayout_6.addWidget(self.line_2, 0, 1, 1, 1)
         self.groupBox_4 = QtWidgets.QGroupBox(ALWC)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.groupBox_4.sizePolicy().hasHeightForWidth())
@@ -236,10 +260,14 @@ class Ui_ALWC(object):
         self.groupBox_4.setObjectName("groupBox_4")
         self.gridLayout_3 = QtWidgets.QGridLayout(self.groupBox_4)
         self.gridLayout_3.setObjectName("gridLayout_3")
-        spacerItem = QtWidgets.QSpacerItem(295, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(
+            295, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
+        )
         self.gridLayout_3.addItem(spacerItem, 0, 2, 1, 1)
         self.YTcontrastTW = QtWidgets.QTableWidget(self.groupBox_4)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.YTcontrastTW.sizePolicy().hasHeightForWidth())
@@ -260,7 +288,9 @@ class Ui_ALWC(object):
         item = QtWidgets.QTableWidgetItem()
         self.YTcontrastTW.setHorizontalHeaderItem(5, item)
         self.gridLayout_3.addWidget(self.YTcontrastTW, 1, 0, 1, 3)
-        spacerItem1 = QtWidgets.QSpacerItem(296, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            296, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
+        )
         self.gridLayout_3.addItem(spacerItem1, 0, 0, 1, 1)
         self.label_2 = QtWidgets.QLabel(self.groupBox_4)
         font = QtGui.QFont()

@@ -3,6 +3,7 @@ from pathlib import Path
 from pprint import pprint
 
 if not sys.stdout:
+
     class FakeStdOut:
         def __init__(self, filename="sys.log"):
             # self.log = open(filename, "a")
@@ -18,7 +19,6 @@ if not sys.stdout:
 
         def isatty(self):
             return True
-
 
     sys.stdout = FakeStdOut()
 

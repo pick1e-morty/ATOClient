@@ -6,7 +6,9 @@ from loguru import logger
 
 from app.utils.project_path import PROJECT_ROOT_PATH
 
-sys.path.append(str(Path(__file__).absolute().parent.parent))  # 在vscode里不会自动追加项目根目录为pythonpath
+sys.path.append(
+    str(Path(__file__).absolute().parent.parent)
+)  # 在vscode里不会自动追加项目根目录为pythonpath
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
@@ -15,7 +17,14 @@ from app.main_window.main_window import MainWindow
 logger.remove()
 logger.add(sys.stdout, level="DEBUG")
 logFilePath = str(PROJECT_ROOT_PATH / "main.log")
-logger.add(logFilePath, encoding="utf-8", enqueue=True, rotation="500MB", compression="zip", retention="10 days")
+logger.add(
+    logFilePath,
+    encoding="utf-8",
+    enqueue=True,
+    rotation="500MB",
+    compression="zip",
+    retention="10 days",
+)
 
 # "main.log"：指定日志文件的路径和名称。
 # encoding="utf-8"：指定日志文件的编码格式为UTF-8。
@@ -24,9 +33,11 @@ logger.add(logFilePath, encoding="utf-8", enqueue=True, rotation="500MB", compre
 # compression="zip"：使用zip压缩算法对日志文件进行压缩。
 # retention="10 days"：设置日志文件的保留时间为10天，超过时间将自动删除。
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     multiprocessing.freeze_support()
-    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     app = QApplication(sys.argv)
